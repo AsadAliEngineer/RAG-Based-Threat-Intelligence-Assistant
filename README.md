@@ -32,8 +32,6 @@ rag = CVERAGSystem()
 
 # Search for vulnerabilities with rich context
 results = rag.search_cves("SQL injection vulnerabilities", n_results=3)
-# Output includes: CVE ID, severity, affected products/vendors, 
-# CWE weaknesses, CAPEC attack patterns, and similarity scores
 
 # Example output:
 # CVE-2024-45174 (HIGH)
