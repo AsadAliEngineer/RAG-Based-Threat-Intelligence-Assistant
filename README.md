@@ -4,11 +4,6 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
 
 ## 🚀 Quick Start
 
-### Prerequisites
-- Python 3.8+
-- Docker Desktop (for Neo4j)
-- 8GB+ RAM recommended
-
 ### Installation
 
 1. **Clone and setup**
