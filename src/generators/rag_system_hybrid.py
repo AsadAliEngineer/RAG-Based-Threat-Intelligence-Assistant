@@ -56,56 +56,10 @@ class HybridRAGSystem:
         self._cache_lock = threading.Lock()
         self.max_cache_size = config.get('max_cache_years', 2)
 
-        # Fast CVE ID index for exact matches
-        self._cve_index = {}
-        self._index_loaded = False
-        self._index_lock = threading.Lock()
-
         # Thread pool for parallel operations
         self.executor = ThreadPoolExecutor(max_workers=4)
 
-        # Build fast CVE index
-        self._build_cve_index()
-
         logger.info("HybridRAGSystem initialized")
-
-    def _build_cve_index(self):
-        """Build fast CVE ID index for exact matches"""
-        if self._index_loaded:
-            return
-
-        with self._index_lock:
-            if self._index_loaded:  # Double-check
-                return
-
-            logger.info("Building fast CVE ID index...")
-            
-            for year in [2021, 2022, 2023, 2024]:
-                file_path = os.path.join(self.base_path, f'enhanced_documents_cve_{year}.json')
-                if not os.path.exists(file_path):
-                    continue
-
-                try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
-                        data = json.load(f)
-
-                    # Index CVE IDs for fast lookup
-                    for doc in data:
-                        cve_id = doc.get('id', '') or doc.get('cve_id', '')
-                        if cve_id:
-                            self._cve_index[cve_id.upper()] = {
-                                'doc': doc,
-                                'year': year,
-                                'file_path': file_path
-                            }
-
-                    logger.info(f"Indexed {len(data)} CVEs from year {year}")
-
-                except Exception as e:
-                    logger.error(f"Error indexing year {year}: {e}")
-
-            self._index_loaded = True
-            logger.info(f"Fast CVE index built with {len(self._cve_index)} entries")
 
     def search(self, query: str, top_k: int = 10) -> List[Dict[str, Any]]:
         """
@@ -205,28 +159,35 @@ class HybridRAGSystem:
 
     def _search_exact_cve_id(self, context: SearchContext, top_k: int) -> List[Dict[str, Any]]:
         """
-        Fast exact CVE ID search using pre-built index
+        Fast exact CVE ID search using year-based JSON files
         """
-        query_upper = context.query.upper()
-        
-        # Check fast index first
-        if query_upper in self._cve_index:
-            index_entry = self._cve_index[query_upper]
-            doc = index_entry['doc']
-            year = index_entry['year']
-            
-            return [{
-                'id': query_upper,
-                'content': doc.get('content', ''),
-                'description': doc.get('description', ''),
-                'score': 10.0,
-                'year': year,
-                'match_type': 'exact_id',
-                'severity': doc.get('severity', 'unknown'),
-                'cvss_score': doc.get('cvss_score', 0.0)
-            }]
+        if not context.year:
+            # Extract year from CVE ID
+            year_match = re.search(r'cve-(\d{4})', context.query, re.IGNORECASE)
+            if year_match:
+                context.year = int(year_match.group(1))
 
-        # Fallback to year-based search if not in index
+        if context.year and 2021 <= context.year <= 2024:
+            # Load specific year data
+            year_data = self._load_year_data(context.year)
+
+            # Find exact match
+            query_upper = context.query.upper()
+            for doc in year_data:
+                doc_id = (doc.get('id', '') or doc.get('cve_id', '')).upper()
+                if doc_id == query_upper:
+                    return [{
+                        'id': doc_id,
+                        'content': doc.get('content', ''),
+                        'description': doc.get('description', ''),
+                        'score': 10.0,
+                        'year': context.year,
+                        'match_type': 'exact_id',
+                        'severity': doc.get('severity', 'unknown'),
+                        'cvss_score': doc.get('cvss_score', 0.0)
+                    }]
+
+        # If not found, fallback to year-based search
         logger.warning(f"Exact match not found for {context.query}, falling back to year-based search")
         return self._search_year_based(context, top_k)
 
