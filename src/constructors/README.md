@@ -1,4 +1,4 @@
-# 🏗️ Knowledge Graph Construction System
+# Knowledge Graph Construction System
 
 This directory contains the core components for building and managing the CVE knowledge graph using Neo4j. The system processes CVE data, extracts product information from CPE strings, and creates a comprehensive graph database for vulnerability analysis.
 
