@@ -7,7 +7,7 @@ library_name: peft
 
 <!-- Provide a quick summary of what the model is/does. -->
 
-This is a fine-tuned version of Meta-Llama-3-8B specifically trained for CVE (Common Vulnerabilities and Exposures) analysis and cybersecurity intelligence tasks. The model has been trained on a comprehensive dataset of CVE descriptions, attack patterns, and security analysis to provide enhanced understanding and analysis of cybersecurity vulnerabilities.
+This is a fine-tuned version of Meta-Llama-3-8B specifically trained for CVE analysis and cybersecurity intelligence tasks. The model has been trained on a comprehensive dataset of CVE descriptions, attack patterns, and security analysis to provide enhanced understanding and analysis of cybersecurity vulnerabilities.
 
 ## Model Details
 
@@ -15,62 +15,9 @@ This is a fine-tuned version of Meta-Llama-3-8B specifically trained for CVE (Co
 
 This model is a fine-tuned version of Meta-Llama-3-8B using LoRA (Low-Rank Adaptation) for efficient training on CVE cybersecurity data.
 
-- **Developed by:** CVE-KGRAG Team
-- **Model type:** Fine-tuned Large Language Model (LLM)
-- **Language(s) (NLP):** English (Cybersecurity domain)
-- **License:** Meta-Llama-3-8B License
-- **Finetuned from model:** meta-llama/Meta-Llama-3-8B
-
-### Model Sources
-
 - **Repository:** CVE-KGRAG Project
 - **Base Model:** meta-llama/Meta-Llama-3-8B
 - **Training Framework:** PEFT (Parameter-Efficient Fine-Tuning)
-
-## Uses
-
-### Direct Use
-
-This model is designed for:
-- CVE vulnerability analysis and classification
-- Security intelligence report generation
-- Attack pattern recognition and analysis
-- Cybersecurity threat assessment
-- Vulnerability impact analysis
-
-### Downstream Use
-
-The model can be integrated into:
-- Security analysis tools
-- Vulnerability management systems
-- Threat intelligence platforms
-- Automated security reporting systems
-- CVE knowledge graph enhancement
-
-### Out-of-Scope Use
-
-This model should not be used for:
-- Generating actual exploits or attack code
-- Bypassing security measures
-- Unauthorized penetration testing
-- Any malicious cybersecurity activities
-
-## Bias, Risks, and Limitations
-
-### Limitations
-
-- The model is trained on historical CVE data and may not capture the latest threat patterns
-- Performance depends on the quality and coverage of training data
-- May not accurately assess novel or zero-day vulnerabilities
-- Limited to English language cybersecurity content
-
-### Recommendations
-
-Users should:
-- Always verify model outputs with additional security tools
-- Use as part of a comprehensive security analysis workflow
-- Keep the model updated with latest training data
-- Combine with human expertise for critical security decisions
 
 ## How to Get Started with the Model
 
@@ -102,7 +49,7 @@ response = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 The model was trained on:
 - **Dataset:** Enhanced CVE training dataset
-- **Samples:** 100 (production run)
+- **Samples:** 100 
 - **Data Source:** CVE records, CAPEC attack patterns, MITRE ATT&CK techniques
 - **Format:** Structured CVE analysis prompts and responses
 
@@ -127,33 +74,6 @@ The model was trained on:
 - **Model Size:** ~1.0MB (LoRA adapter only)
 - **Hardware:** CUDA GPU
 - **Framework:** PEFT 0.7.1
-
-## Evaluation
-
-### Training Results
-
-- **Final Loss:** Stable training (min: 17.89, max: 21.43)
-- **Eval Loss:** Stable (19.22)
-- **Overfitting Analysis:** No overfitting detected
-- **Training Stability:** ✅ Stable loss progression
-- **Early Stopping:** Not triggered
-
-### Model Performance
-
-- **Loss Stability:** ✅ Stable
-- **Eval Loss Stability:** ✅ Stable
-- **Training Completion:** ✅ Successful
-- **Model Quality:** Ready for deployment
-- **Training Scale:** 10x larger than test run (100 vs 10 samples)
-
-## Technical Specifications
-
-### Model Architecture and Objective
-
-- **Architecture:** Transformer-based language model
-- **Objective:** CVE analysis and cybersecurity intelligence
-- **Fine-tuning Method:** LoRA (Low-Rank Adaptation)
-- **Adapter Type:** PEFT LoRA adapter
 
 ### Compute Infrastructure
 
@@ -183,13 +103,7 @@ models/fine_tuned_cve_production/
 └── checkpoint-*/               # Training checkpoints (120, 160, 200 steps)
 ```
 
-## Integration Status
 
-- **✅ Training Completed:** July 26, 2025 (Production Run)
-- **✅ Model Ready:** For integration with RAG system
-- **✅ Safety Verified:** No overfitting detected
-- **✅ Enhanced Scale:** 100 samples, 200 steps
-- **🔄 Next Step:** Integration with CVE-KGRAG system
 
 ## Model Comparison
 
@@ -201,27 +115,3 @@ models/fine_tuned_cve_production/
 | **Loss Range** | 17.89-19.70 | 17.89-21.43 |
 | **Eval Loss** | 18.68 | 19.22 |
 | **Model Quality** | ✅ Good | ✅ Better |
-
-## Citation
-
-**BibTeX:**
-```bibtex
-@misc{cve-kgrag-finetuned-2025,
-  title={CVE-KGRAG Fine-tuned Model for Cybersecurity Intelligence},
-  author={CVE-KGRAG Team},
-  year={2025},
-  url={https://github.com/Yuni0217/CVE-KGRAG}
-}
-```
-
-## Model Card Contact
-
-- **Project:** CVE-KGRAG
-- **Repository:** https://github.com/Yuni0217/CVE-KGRAG
-- **Purpose:** Cybersecurity vulnerability analysis and intelligence
-
-### Framework versions
-
-- PEFT 0.7.1
-- Transformers (latest)
-- PyTorch (CUDA-enabled)
