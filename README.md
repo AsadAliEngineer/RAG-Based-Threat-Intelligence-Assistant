@@ -20,7 +20,7 @@
 
 This project combines a comprehensive knowledge graph for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. We automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data.
 
-## 📊 Current Statistics (Latest)
+## Current Statistics (Latest)
 
 ### **Knowledge Graph Coverage (1999-2025)**
 - **190,310 CVEs** with rich metadata (CVSS, affected products, CWE, CAPEC, MITRE mappings)
@@ -44,7 +44,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
 4. **Lenovo**: 4,123 vulnerabilities
 5. **Siemens**: 4,083 vulnerabilities
 
-# 🚀 Quick Start
+# Quick Start
 
 ## **Option 1: Start RAG System (Recommended)**
 
@@ -59,6 +59,34 @@ ollama pull llama3.1:8b
 ollama pull llama3.1:70b  # Optional: for higher quality responses
 ```
 
+### **Download All CVE Data (1999-2025)**
+```bash
+python scripts/download_all_cves.py
+```
+
+### **Run the Data Pipeline**
+```bash
+# Collect and process data
+python src/collectors/main_collector.py
+python src/processors/process_all_cves.py
+
+# Parse CPEs and extract products/vendors
+python src/constructors/run_cpe_extraction.py
+
+### **Construction of KG and RAG System**
+
+# Build the knowledge graph (JSON-based, no Neo4j required)
+python src/constructors/kg_builder_without_neo4j.py
+
+# Export KG data for RAG (JSON-based)
+python src/generators/export_kg_for_rag_without_neo4j.py --full
+```
+
+### **Build Vector Database**
+```bash
+# Build the vector database for semantic search
+python -m src.generators.rag_system --build
+```
 ### **Start the System**
 
 #### **Method A: Individual Services**
@@ -76,11 +104,6 @@ python src/ui/gradio_app.py
 python scripts/start_services.py
 ```
 
-### **Access Interfaces**
-- **🌐 Gradio UI**: http://localhost:7860
-- **📚 API Documentation**: http://localhost:8000/docs  
-- **🔍 API Health Check**: http://localhost:8000/api/v1/health
-
 ### **Test the System**
 ```bash
 # Test search functionality
@@ -94,39 +117,7 @@ curl -X POST http://localhost:8000/api/v1/query \
   -d '{"query": "What is CVE-2021-44228?", "top_k": 5, "use_large_model": false}'
 ```
 
-## **Option 2: Data Pipeline (If you need to rebuild the knowledge base)**
-
-### **Download All CVE Data (1999-2025)**
-```bash
-python scripts/download_all_cves.py
-```
-
-### **Run the Data Pipeline**
-```bash
-# Collect and process data
-python src/collectors/main_collector.py
-python src/processors/process_all_cves.py
-
-# Parse CPEs and extract products/vendors
-python src/constructors/run_cpe_extraction.py
-
-# Build the knowledge graph (JSON-based, no Neo4j required)
-python src/constructors/kg_builder_without_neo4j.py
-```
-
-### **Export for RAG System**
-```bash
-# Export KG data for RAG (JSON-based)
-python src/generators/export_kg_for_rag_without_neo4j.py --full
-```
-
-### **Build Vector Database**
-```bash
-# Build the vector database for semantic search
-python -m src.generators.rag_system --build
-```
-
-## **Option 3: Neo4j-Based Workflow (Full Graph Database)**
+## **Option 2: Neo4j-Based Workflow**
 
 1. **Start Neo4j (Docker)**
    ```bash
@@ -163,7 +154,8 @@ python -m src.generators.rag_system --build
    python -m src.generators.rag_system --search "SQL injection vulnerabilities"
    ```
 
-## 🏗️ Architecture Overview
+
+## Architecture Overview
 
 ### **Data Pipeline**
 ```
@@ -193,14 +185,6 @@ Relationships: CVE→Product, CVE→CWE, CVE→CAPEC, CVE→MITRE, Product→Ven
                        └─────────────────┘    └─────────────────┘
 ```
 
-### **Current System Status**
-- ✅ **FastAPI Server**: Running on port 8000
-- ✅ **Gradio UI**: Running on port 7860  
-- ✅ **Vector Database**: ChromaDB with 192,390 documents
-- ✅ **Embedding Model**: BGE-Large-EN (1024 dimensions)
-- ✅ **LLM Integration**: Ollama with Llama 3.1 models
-- ✅ **Search Functionality**: Year-based CVE search
-- ✅ **API Endpoints**: Query, Search, Summary, Health check
 
 ## 📁 Project Structure
 
@@ -242,16 +226,6 @@ data/
 pytest
 ```
 
-## 🔧 Configuration
-
-- **Main config**: `config.py`
-- **RAG config**: `src/generators/rag_config.py`
-- **Example Cypher queries**: `src/constructors/neo4j_queries.md`
-
-## 📚 Documentation
-
-- **Constructors README**: `src/constructors/README.md` - Detailed knowledge graph documentation
-- **For new data types or advanced usage**: See in-code docstrings and comments
 
 ## 🎯 System Features
 
@@ -276,14 +250,6 @@ pytest
 - `POST /api/v1/search` - Vector search only
 - `POST /api/v1/summary` - Statistical analysis
 - `GET /api/v1/health` - System health check
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
 
 ## 📄 License
 
@@ -347,5 +313,3 @@ curl -X POST http://localhost:8000/api/v1/search \
   -H "Content-Type: application/json" \
   -d '{"query": "CVE-2021-44228", "top_k": 5}'
 ```
-
-## Troubleshooting
