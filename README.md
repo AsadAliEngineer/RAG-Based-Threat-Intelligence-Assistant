@@ -17,12 +17,14 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
 
 2. **Start Neo4j Database**
    ```bash
-   docker run -d \
-     --name neo4j \
-     -p 7474:7474 -p 7687:7687 \
-     -e NEO4J_AUTH=neo4j/password \
-     -e NEO4J_PLUGINS='["apoc"]' \
-     neo4j:latest
+   # IMPORTANT: Set your own secure Neo4j password!
+export NEO4J_PASSWORD=<your_password>
+docker run -d \
+  --name neo4j \
+  -p 7474:7474 -p 7687:7687 \
+  -e NEO4J_AUTH=neo4j:${NEO4J_PASSWORD} \
+  -e NEO4J_PLUGINS='["apoc"]' \
+  neo4j:latest
    ```
 
 3. **Build Knowledge Graph**
