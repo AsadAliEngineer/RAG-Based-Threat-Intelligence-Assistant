@@ -207,6 +207,16 @@ Relationships: CVE→Product, CVE→CWE, CVE→CAPEC, CVE→MITRE, Product→Ven
 - `POST /api/v1/summary` - Statistical analysis
 - `GET /api/v1/health` - System health check
 
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+## Citing Our Work
+If you use APTArena in your research, please cite:
+```
+@misc{jiang2025cygategametheoreticcyberattackdefense,
+      title={CyGATE: Game-Theoretic Cyber Attack-Defense Engine for Patch Strategy Optimization}, 
+      author={Yuning Jiang and Nay Oo and Qiaoran Meng and Lu Lin and Dusit Niyato and Zehui Xiong and Hoon Wei Lim and Biplab Sikdar},
+      year={2025},
+      eprint={2508.00478},
+      archivePrefix={arXiv},
+      primaryClass={cs.CR},
+      url={https://arxiv.org/abs/2508.00478}, 
+}
+```
