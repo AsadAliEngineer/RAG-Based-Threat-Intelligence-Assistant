@@ -569,8 +569,7 @@ class CVEProcessor:
         
         return list(set(tags))  # Remove duplicates
     
-<<<<<<< HEAD
-=======
+
     def save_processed_data(self, enhanced_docs: List[Dict]):
         """Save processed data"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -620,7 +619,6 @@ class CVEProcessor:
         logger.info(f"Summary: {len(self.all_cves)} CVEs, {len(self.kev_data)} KEV entries, {len(enhanced_docs)} enhanced documents")
         logger.info(f"Correlations: {kev_count} CVEs in KEV, {csaf_correlations} CSAF correlations, {exploitdb_correlations} ExploitDB correlations")
     
->>>>>>> e4768ae8d3512210925fbdbb8c63db119c443311
     def run_full_processing(self, max_cves: Optional[int] = None):
         """Run the complete processing pipeline"""
         logger.info("Starting full CVE processing pipeline...")
