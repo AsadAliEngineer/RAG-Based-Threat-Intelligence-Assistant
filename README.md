@@ -135,8 +135,6 @@ data/
 
 - **[Knowledge Graph Details](src/constructors/README.md)** - Comprehensive KG documentation
 - **[Query Examples](src/constructors/neo4j_queries.md)** - Cypher query examples
-- **[Graph Analytics](src/constructors/graph_analytics.py)** - Analytics and insights
-- **[RAG System](src/generators/rag_system.py)** - Retrieval-Augmented Generation system
 
 ## 🤝 Contributing
 
