@@ -37,19 +37,6 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
 - **246 vulnerability clusters** based on CWE and product relationships
 - **Graph density**: 0.000010 (sparse, efficient graph structure)
 
-### **Severity Distribution**
-- **CRITICAL**: 23,552 CVEs
-- **HIGH**: 60,367 CVEs  
-- **MEDIUM**: 66,086 CVEs
-- **LOW**: 2,671 CVEs
-- **UNKNOWN**: 37,634 CVEs
-
-### **Top Vendors by Vulnerability Count**
-1. **HP**: 14,569 vulnerabilities
-2. **Intel**: 10,014 vulnerabilities
-3. **Cisco**: 5,733 vulnerabilities
-4. **Lenovo**: 4,123 vulnerabilities
-5. **Siemens**: 4,083 vulnerabilities
 
 # Quick Start
 
