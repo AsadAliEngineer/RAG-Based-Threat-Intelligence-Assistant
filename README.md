@@ -21,113 +21,59 @@
 
 This project combines a Neo4j knowledge graph (KG) for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. We also automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data.
 
-## Usage Examples
+## 🚀 Quick Start
 
-### **RAG System Queries**
-```python
-from generators.rag_system import CVERAGSystem
+1. **Start Neo4j (Docker)**
+   ```bash
+   cp .env.example .env  # Set your own password in .env
+   docker-compose up -d
+   ```
 
-# Initialize RAG system
-rag = CVERAGSystem()
+2. **Run the Data Pipeline**
+   ```bash
+   # Collect and process data
+   python src/collectors/main_collector.py
+   python src/processors/process_all_cves.py
 
-# Search for vulnerabilities with rich context
-results = rag.search_cves("SQL injection vulnerabilities", n_results=3)
+   # Parse CPEs and extract products/vendors
+   python src/constructors/run_cpe_extraction.py
 
-# Example output:
-# CVE-2024-45174 (HIGH)
-#   Products: cloudclassroom-php_project
-#   Vendors: vishalmathur  
-#   CWE: CWE-89
-#   CAPEC: CAPEC-108, CAPEC-470, CAPEC-7, CAPEC-110, CAPEC-109, CAPEC-66
+   # Build the knowledge graph
+   python src/constructors/setup_neo4j_schema.py
+   python src/constructors/enhanced_neo4j_loader.py --stats
+   ```
 
-# Get vulnerability summary
-summary = rag.get_vulnerability_summary("Cross-site scripting")
+3. **Export for RAG & Run RAG System**
+   ```bash
+   # Export KG data for RAG
+   python -m src.generators.export_kg_for_rag --full
 
-# Find similar CVEs
-similar = rag.get_similar_cves("CVE-2024-12345")
+   # Build vector DB and search
+   python -m src.generators.rag_system --build
+   python -m src.generators.rag_system --search "SQL injection vulnerabilities"
+   ```
+
+---
+
+### 🧪 Testing
+
+```bash
+pytest
 ```
 
-### **Graph Database Queries**
-```cypher
-// Find CVEs by vendor
-MATCH (cve:CVE)-[:AFFECTS]->(product:Product)-[:MANUFACTURED_BY]->(vendor:Vendor)
-WHERE vendor.name =~ '(?i).*microsoft.*'
-RETURN cve.id, cve.cvss_v3_severity, product.name
-ORDER BY cve.cvss_v3_base_score DESC
+---
+
+### 📁 Project Structure
+
+```
+src/         # All code (collectors, processors, constructors, generators)
+data/        # All data (raw, processed, knowledge_base, knowledge_graph)
 ```
 
-##  Quick Start
+---
 
-### Prerequisites
-- Python 3.8+
-- Docker Desktop (for Neo4j)
-- 8GB+ RAM recommended
+### 📚 More
 
-### Installation
-
-1. **Clone and setup**
-   ```bash
-   git clone <repository-url>
-   cd CVE-KGRAG
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-2. **Start Neo4j Database**
-   > **First time?** Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and pull the [Neo4j image](https://hub.docker.com/_/neo4j) with `docker pull neo4j:latest` if you haven't already.
-   ```bash
-   # IMPORTANT: Set your own secure Neo4j password!
-   export NEO4J_PASSWORD=<your_password>
-   docker run -d \
-     --name neo4j \
-     -p 7474:7474 -p 7687:7687 \
-     -e NEO4J_AUTH=neo4j:${NEO4J_PASSWORD} \
-     -e NEO4J_PLUGINS='["apoc"]' \
-     neo4j:latest
-   ```
-
-3. **Collect, Correlate, and Process Data**
-
-   Put your downloaded zipped CVE in data/CVE/zip folder, and proceed the following:
-   
-   ```bash
-   cd src/collectors
-   python main_collector.py
-   # Downloads and preprocesses CVE, CPE, CWE, CAPEC, and threat intelligence data.
-   # Produces raw and intermediate files in data/knowledge_base and data/CVE.
-   
-   cd ../processors
-   python process_all_cves.py
-   # Correlates and enriches the collected data, producing processed CVE and CPE documents for graph construction.
-   ```
-
-5. **Parse CPEs and Extract Products/Vendors**
-   ```bash
-   cd ../constructors
-   python run_cpe_extraction.py
-   # Parses CPE strings from processed CVE data, extracts and normalizes products and vendors,
-   # and outputs structured product/vendor data for graph construction.
-   ```
-   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
-
-6. **Build Knowledge Graph**
-   ```bash
-   cd ../constructors
-   python setup_neo4j_schema.py
-   python enhanced_neo4j_loader.py --stats
-   ```
-
-7. **Test RAG System**
-   ```bash
-   cd ../generators
-   python rag_system.py
-   ```
-
-8. **Explore the Graph**
-   - **Neo4j Browser**: need to login
-   - **Analytics**: `python graph_analytics.py`
-   - **Query Examples**: See `neo4j_queries.md`
-
-
-
+- All config: `src/generators/rag_config.py`
+- Example Cypher queries: `src/constructors/neo4j_queries.md`
+- For new data types or advanced usage, see in-code docstrings and comments.
