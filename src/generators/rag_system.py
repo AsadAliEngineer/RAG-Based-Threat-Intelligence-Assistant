@@ -2,8 +2,15 @@
 """
 RAG System for CVE Knowledge Graph
 
-This module implements a Retrieval-Augmented Generation (RAG) system
-for querying and analyzing CVE data using vector embeddings and semantic search.
+Usage examples:
+  Build vector DB (default):
+    python -m src.generators.rag_system --build
+  Search for a query:
+    python -m src.generators.rag_system --search "SQL injection vulnerabilities"
+  Get vulnerability summary:
+    python -m src.generators.rag_system --summary "SQL injection"
+
+Configuration is centralized in rag_config.py. Do not hardcode paths or model names here.
 """
 
 import json
@@ -12,6 +19,10 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
 
+from src.generators.rag_config import (
+    CVE_DATA_PATH, VECTOR_DB_PATH, EMBEDDING_MODEL_NAME, CHUNK_SIZE, CHUNK_OVERLAP, LOGGING_LEVEL
+)
+
 import chromadb
 from chromadb.config import Settings
 import numpy as np
@@ -19,13 +30,13 @@ from sentence_transformers import SentenceTransformer
 import torch
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=LOGGING_LEVEL)
 logger = logging.getLogger(__name__)
 
 class CVEDocumentProcessor:
     """Process CVE documents for RAG system"""
     
-    def __init__(self, chunk_size: int = 512, chunk_overlap: int = 50):
+    def __init__(self, chunk_size: int = CHUNK_SIZE, chunk_overlap: int = CHUNK_OVERLAP):
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
     
@@ -134,7 +145,7 @@ class CVEDocumentProcessor:
 class CVEEmbeddingGenerator:
     """Generate embeddings for CVE documents"""
     
-    def __init__(self, model_name: str = "all-MiniLM-L6-v2"):
+    def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
         self.model_name = model_name
         self.model = SentenceTransformer(model_name)
         logger.info(f"Initialized embedding model: {model_name}")
@@ -151,7 +162,7 @@ class CVEEmbeddingGenerator:
 class CVESearchEngine:
     """Vector search engine for CVE data"""
     
-    def __init__(self, persist_directory: str = "../../data/knowledge_graph/vector_db"):
+    def __init__(self, persist_directory: str = VECTOR_DB_PATH):
         self.persist_directory = persist_directory
         os.makedirs(persist_directory, exist_ok=True)
         
@@ -226,17 +237,17 @@ class CVESearchEngine:
         
         # Format results
         formatted_results = []
-        if (results and results.get('ids') and results['ids'][0] and 
-            results.get('documents') and results['documents'][0] and
-            results.get('metadatas') and results['metadatas'][0] and
-            results.get('distances') and results['distances'][0]):
-            
-            for i in range(len(results['ids'][0])):
+        ids = results.get('ids', [[]]) or [[]]
+        documents = results.get('documents', [[]]) or [[]]
+        metadatas = results.get('metadatas', [[]]) or [[]]
+        distances = results.get('distances', [[]]) or [[]]
+        if (ids and ids[0] and documents and documents[0] and metadatas and metadatas[0] and distances and distances[0]):
+            for i in range(len(ids[0])):
                 result = {
-                    'id': results['ids'][0][i],
-                    'text': results['documents'][0][i],
-                    'metadata': results['metadatas'][0][i],
-                    'distance': results['distances'][0][i]
+                    'id': ids[0][i],
+                    'text': documents[0][i],
+                    'metadata': metadatas[0][i],
+                    'distance': distances[0][i]
                 }
                 formatted_results.append(result)
         
@@ -256,8 +267,8 @@ class CVERAGSystem:
     """Main RAG system for CVE analysis"""
     
     def __init__(self, 
-                 vector_db_path: str = "../../data/knowledge_graph/vector_db",
-                 cve_data_path: str = "../../data/knowledge_graph/exports/cve_documents_for_rag.json"):
+                 vector_db_path: str = VECTOR_DB_PATH,
+                 cve_data_path: str = CVE_DATA_PATH):
         self.vector_db_path = vector_db_path
         self.cve_data_path = cve_data_path
         
@@ -376,95 +387,36 @@ class CVERAGSystem:
             "sample_results": results[:5]
         }
 
-def main():
-    """Demo the RAG system"""
-    print(" CVE RAG System Demo")
-    print("=" * 50)
-    
-    # Initialize RAG system
+if __name__ == "__main__":
+    import argparse
+    parser = argparse.ArgumentParser(description="RAG System for CVE Knowledge Graph")
+    parser.add_argument('--build', action='store_true', help='Build the vector database from CVE documents')
+    parser.add_argument('--search', type=str, help='Search for CVEs matching the query')
+    parser.add_argument('--summary', type=str, help='Get a vulnerability summary for the query')
+    parser.add_argument('--n_results', type=int, default=3, help='Number of results to return for search')
+    args = parser.parse_args()
+
     rag_system = CVERAGSystem()
-    
-    # Build vector database (if needed)
-    rag_system.build_vector_database()
-    
-    # Demo searches
-    queries = [
-        "SQL injection vulnerabilities",
-        "Microsoft Windows remote code execution",
-        "Cross-site scripting XSS",
-        "Buffer overflow in network services"
-    ]
-    
-    for query in queries:
-        print(f"\n Searching for: '{query}'")
-        results = rag_system.search_cves(query, n_results=3)
-        
+
+    if args.build:
+        rag_system.build_vector_database()
+    elif args.search:
+        results = rag_system.search_cves(args.search, n_results=args.n_results)
         for i, result in enumerate(results, 1):
             metadata = result['metadata']
-            print(f"  {i}. {metadata['cve_id']} ({metadata.get('severity', 'Unknown')})")
-            
-            # Handle products (could be string or list)
-            products = metadata.get('products', '')
-            if products is None:
-                products_display = ''
-            elif isinstance(products, str):
-                products_display = products
-            elif isinstance(products, list):
-                products_display = ', '.join(products[:3]) if products else ''
-            else:
-                products_display = str(products)
-            print(f"     Products: {products_display}")
-            
-            # Handle vendors (could be string or list)
-            vendors = metadata.get('vendors', '')
-            if vendors is None:
-                vendors_display = ''
-            elif isinstance(vendors, str):
-                vendors_display = vendors
-            elif isinstance(vendors, list):
-                vendors_display = ', '.join(vendors[:3]) if vendors else ''
-            else:
-                vendors_display = str(vendors)
-            print(f"     Vendors: {vendors_display}")
-
-            # CWE
-            cwes = metadata.get('weaknesses', '')
-            if cwes:
-                if isinstance(cwes, str) and cwes.strip():
-                    print(f"     CWE: {cwes}")
-                elif isinstance(cwes, list) and cwes:
-                    cwe_display = ', '.join(cwes)
-                    if cwe_display.strip():
-                        print(f"     CWE: {cwe_display}")
-
-            # CAPEC
-            capecs = metadata.get('attack_patterns', '')
-            if capecs:
-                if isinstance(capecs, str) and capecs.strip():
-                    print(f"     CAPEC: {capecs}")
-                elif isinstance(capecs, list) and capecs:
-                    capec_display = ', '.join(capecs)
-                    if capec_display.strip():
-                        print(f"     CAPEC: {capec_display}")
-
-            # MITRE ATT&CK
-            mitre = metadata.get('mitre_attack', '') or metadata.get('mitre_techniques', '') or metadata.get('attack_techniques', '')
-            if mitre:
-                if isinstance(mitre, str) and mitre.strip():
-                    print(f"     MITRE ATT&CK: {mitre}")
-                elif isinstance(mitre, list) and mitre:
-                    mitre_display = ', '.join(mitre)
-                    if mitre_display.strip():
-                        print(f"     MITRE ATT&CK: {mitre_display}")
-
-            print(f"     Distance: {result['distance']:.4f}")
-    
-    # Demo vulnerability summary
-    print(f"\n Vulnerability Summary for 'SQL injection'")
-    summary = rag_system.get_vulnerability_summary("SQL injection")
-    print(f"  Total results: {summary['total_results']}")
-    print(f"  Severity distribution: {summary['severity_distribution']}")
-    print(f"  Top vendors: {summary['top_vendors'][:5]}")
-
-if __name__ == "__main__":
-    main() 
+            print(f"{i}. {metadata['cve_id']} ({metadata.get('severity', 'Unknown')})")
+            print(f"   Products: {metadata.get('products', '')}")
+            print(f"   Vendors: {metadata.get('vendors', '')}")
+            print(f"   CWE: {metadata.get('weaknesses', '')}")
+            print(f"   CAPEC: {metadata.get('attack_patterns', '')}")
+            print(f"   Distance: {result['distance']:.4f}\n")
+    elif args.summary:
+        summary = rag_system.get_vulnerability_summary(args.summary)
+        print(f"Vulnerability Summary for '{args.summary}':")
+        print(f"  Total results: {summary['total_results']}")
+        print(f"  Severity distribution: {summary['severity_distribution']}")
+        print(f"  Top vendors: {summary['top_vendors']}")
+        print(f"  Top products: {summary['top_products']}")
+        print(f"  Common weaknesses: {summary['common_weaknesses']}")
+    else:
+        parser.print_help() 

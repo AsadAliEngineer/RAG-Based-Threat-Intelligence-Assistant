@@ -2,10 +2,19 @@
 """
 Export Knowledge Graph Data for RAG System Development
 
-This script exports CVE data from Neo4j in formats suitable for:
-- Vector database ingestion
-- Document processing
-- RAG pipeline development
+Usage examples:
+  Export CVE documents:
+    python -m src.generators.export_kg_for_rag --cve
+  Export product-vendor data:
+    python -m src.generators.export_kg_for_rag --product_vendor
+  Export relationships:
+    python -m src.generators.export_kg_for_rag --relationships
+  Export statistics:
+    python -m src.generators.export_kg_for_rag --stats
+  Run full export (all):
+    python -m src.generators.export_kg_for_rag --full
+
+Configuration is centralized in rag_config.py. Do not hardcode paths or credentials here.
 """
 
 import json
@@ -14,11 +23,19 @@ import os
 from datetime import datetime
 from neo4j import GraphDatabase
 from typing import List, Dict, Any
+import logging
+
+from src.generators.rag_config import (
+    NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD, CVE_DATA_PATH, LOGGING_LEVEL
+)
+
+logging.basicConfig(level=LOGGING_LEVEL)
+logger = logging.getLogger(__name__)
 
 class KGExporter:
-    def __init__(self, uri="bolt://localhost:7687", user="neo4j", password="password"):
+    def __init__(self, uri=NEO4J_URI, user=NEO4J_USER, password=NEO4J_PASSWORD):
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
-        self.export_dir = "../../data/knowledge_graph/exports"
+        self.export_dir = os.path.dirname(CVE_DATA_PATH)
         os.makedirs(self.export_dir, exist_ok=True)
         
     def close(self):
@@ -26,7 +43,7 @@ class KGExporter:
         
     def export_cve_documents(self):
         """Export CVE data as documents for RAG processing"""
-        print("Exporting CVE documents for RAG...")
+        logger.info("Exporting CVE documents for RAG...")
         
         with self.driver.session() as session:
             # Get all CVEs with their metadata
@@ -69,11 +86,11 @@ class KGExporter:
                 documents.append(doc)
             
             # Save as JSON
-            output_file = os.path.join(self.export_dir, "cve_documents_for_rag.json")
+            output_file = CVE_DATA_PATH
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(documents, f, indent=2, ensure_ascii=False)
             
-            print(f"Exported {len(documents)} CVE documents to {output_file}")
+            logger.info(f"Exported {len(documents)} CVE documents to {output_file}")
             return documents
     
     def _create_embedding_text(self, cve: Dict, record: Any) -> str:
@@ -328,4 +345,27 @@ def main():
     exporter.run_full_export()
 
 if __name__ == "__main__":
-    main() 
+    import argparse
+    parser = argparse.ArgumentParser(description="Export Knowledge Graph Data for RAG System Development")
+    parser.add_argument('--cve', action='store_true', help='Export CVE documents for RAG')
+    parser.add_argument('--product_vendor', action='store_true', help='Export product-vendor data')
+    parser.add_argument('--relationships', action='store_true', help='Export relationship data')
+    parser.add_argument('--stats', action='store_true', help='Export graph statistics')
+    parser.add_argument('--full', action='store_true', help='Run full export (all steps)')
+    args = parser.parse_args()
+
+    exporter = KGExporter()
+
+    if args.full:
+        exporter.run_full_export()
+    else:
+        if args.cve:
+            exporter.export_cve_documents()
+        if args.product_vendor:
+            exporter.export_product_vendor_data()
+        if args.relationships:
+            exporter.export_relationships()
+        if args.stats:
+            exporter.export_statistics()
+        if not (args.cve or args.product_vendor or args.relationships or args.stats):
+            parser.print_help() 
