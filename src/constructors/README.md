@@ -4,6 +4,8 @@ This directory contains the core components for building and managing the CVE kn
 
 ## 📊 Current Knowledge Graph Statistics
 
+Note that the statistics are for 2024 CVEs only. Feel free to add more data.
+
 ### **Node Counts**
 - **CVE**: 38,995 (with CVSS scores, attack vectors, descriptions)
 - **Product**: 14,499 (with vendor, category, criticality scores)
@@ -32,20 +34,6 @@ This knowledge graph is currently built using **CVE data from 2024 only**, sourc
 - **CVE Data File**: `data/knowledge_base/enhanced_documents_cve_2024.json` (149MB)
 - **CPE Data File**: `data/knowledge_base/cpe_parsing_results_full.json` (29MB)
 
-### **Encouraging Expansion**
-While this sample demonstrates the system's capabilities with 2024 data, you are **strongly encouraged** to:
-
-1. **Test with Historical Data**: Expand to include CVEs from previous years (2010-2023)
-2. **Add More Data Sources**: Integrate additional vulnerability databases
-3. **Include Real-time Updates**: Set up automated CVE data ingestion
-4. **Enhance with Threat Intelligence**: Add MITRE ATT&CK, ExploitDB, and other sources
-
-### **Scaling Considerations**
-- **Memory Requirements**: Full historical dataset (~2010-2024) may require 16GB+ RAM
-- **Processing Time**: Larger datasets will require longer processing times
-- **Storage**: Neo4j database size will scale with data volume
-- **Query Performance**: Consider additional indexing for larger datasets
-
 ## 🏗️ Architecture Overview
 
 ```
@@ -66,23 +54,6 @@ While this sample demonstrates the system's capabilities with 2024 data, you are
                                               │  • Trend Analysis│
                                               └──────────────────┘
 ```
-
-## 📁 Component Overview
-
-### **Core Files**
-
-| File | Purpose | Key Features |
-|------|---------|--------------|
-| `enhanced_neo4j_loader.py` | Main graph loader | Loads 38K+ CVEs with rich metadata |
-| `cpe_parser_system.py` | CPE parsing engine | Parses CPE 2.3, vendor normalization |
-| `graph_analytics.py` | Analytics engine | Vulnerability insights, trend analysis |
-| `setup_neo4j_schema.py` | Schema setup | Creates constraints and indexes |
-| `run_cpe_extraction.py` | CPE extraction | Extracts products from CPE data |
-| `kg_schema.py` | Schema definition | Defines node types and relationships |
-| `neo4j_queries.md` | Query examples | Cypher query documentation |
-
-### **Data Files**
-- `graph_analytics.json` - Current graph statistics and analytics
 
 ## 🚀 Quick Start
 
@@ -106,76 +77,7 @@ python graph_analytics.py
 ```
 
 ### 4. **Explore in Neo4j Browser**
-- Open http://localhost:7474
-- Login: `neo4j` / `password`
-- Use queries from `neo4j_queries.md`
 
-## 🔧 Technical Implementation
-
-### **CPE Parser System** (`cpe_parser_system.py`)
-
-The CPE parser implements advanced parsing capabilities:
-
-```python
-# Example usage
-from cpe_parser_system import CPEParser
-
-parser = CPEParser()
-result = parser.parse_cpe_string("cpe:2.3:a:microsoft:windows:10.0.19041:*:*:*:*:*:*:*:*")
-
-# Returns structured data with:
-# - Vendor normalization
-# - Product classification
-# - Version parsing
-# - Confidence scoring
-```
-
-**Key Features:**
-- **CPE 2.3 Compliance**: Full support for CPE 2.3 specification
-- **Vendor Normalization**: Handles vendor name variations
-- **Product Classification**: Categorizes products by type and family
-- **Version Parsing**: Semantic version analysis with confidence scoring
-- **Error Handling**: Robust error recovery and validation
-
-### **Enhanced Neo4j Loader** (`enhanced_neo4j_loader.py`)
-
-The loader creates a comprehensive knowledge graph:
-
-```python
-# Example usage
-from enhanced_neo4j_loader import EnhancedNeo4jLoader
-
-loader = EnhancedNeo4jLoader()
-loader.load_cve_data("path/to/cve_data.json")
-loader.load_cpe_data("path/to/cpe_data.json")
-loader.load_knowledge_graph()
-```
-
-**Key Features:**
-- **Rich CVE Metadata**: CVSS scores, attack vectors, CWE/CAPEC mappings
-- **Product Ecosystem**: Complete vendor-product-version relationships
-- **Batch Processing**: Efficient loading of large datasets
-- **Error Recovery**: Graceful handling of data inconsistencies
-- **Progress Tracking**: Real-time loading progress and statistics
-
-### **Graph Analytics** (`graph_analytics.py`)
-
-Provides comprehensive analytics and insights:
-
-```python
-# Example usage
-from graph_analytics import GraphAnalytics
-
-analytics = GraphAnalytics()
-analytics.run_full_analysis()
-```
-
-**Analytics Capabilities:**
-- **Vulnerability Trends**: Distribution by severity, year, vendor
-- **Vendor Risk Assessment**: Vulnerability density analysis
-- **Attack Pattern Analysis**: CWE-CAPEC correlation
-- **Data Quality Reports**: Coverage and consistency analysis
-- **Export Capabilities**: JSON export for external analysis
 
 ## 📊 Data Schema
 
@@ -326,120 +228,3 @@ WHERE cve.cvss_v3_severity = 'HIGH' OR cve.cvss_v3_severity = 'CRITICAL'
 RETURN cve.id, cve.cvss_v3_base_score, cve.cvss_v3_severity
 ORDER BY cve.cvss_v3_base_score DESC LIMIT 20
 ```
-
-## 📈 Performance Optimization
-
-### **Indexing Strategy**
-```cypher
-// Create indexes for common query patterns
-CREATE INDEX cve_id IF NOT EXISTS FOR (c:CVE) ON (c.id);
-CREATE INDEX cve_severity IF NOT EXISTS FOR (c:CVE) ON (c.cvss_v3_severity);
-CREATE INDEX product_vendor IF NOT EXISTS FOR (p:Product) ON (p.vendor);
-CREATE INDEX vendor_name IF NOT EXISTS FOR (v:Vendor) ON (v.name);
-```
-
-### **Query Optimization Tips**
-- Use `LIMIT` clauses for large result sets
-- Use `DISTINCT` when you want unique results
-- Use `OPTIONAL MATCH` when relationships might not exist
-- Use regex patterns `(?i)` for case-insensitive matching
-
-## 🔧 Configuration Options
-
-### **Enhanced Neo4j Loader Options**
-```bash
-python enhanced_neo4j_loader.py --help
-
-Options:
-  --cve-file PATH     Path to processed CVE data file
-  --cpe-file PATH     Path to CPE parsing results file
-  --uri URI           Neo4j URI (default: bolt://localhost:7687)
-  --user USER         Neo4j username (default: neo4j)
-  --password PASS     Neo4j password (default: password)
-  --limit N           Limit number of CVEs to process
-  --stats             Show graph statistics after loading
-```
-
-### **Graph Analytics Options**
-```bash
-python graph_analytics.py --help
-
-Options:
-  --uri URI           Neo4j URI (default: bolt://localhost:7687)
-  --user USER         Neo4j username (default: neo4j)
-  --password PASS     Neo4j password (default: password)
-  --export PATH       Export analytics to JSON file
-```
-
-## 🚨 Troubleshooting
-
-### **Common Issues**
-
-1. **Neo4j Connection Errors**
-   ```bash
-   # Check if Neo4j is running
-   docker ps | grep neo4j
-   
-   # Restart Neo4j if needed
-   docker restart neo4j
-   ```
-
-2. **Memory Issues**
-   ```bash
-   # Load smaller batches for testing
-   python enhanced_neo4j_loader.py --limit 1000
-   ```
-
-3. **Data Quality Issues**
-   ```bash
-   # Run data quality analysis
-   python graph_analytics.py
-   ```
-
-### **Performance Monitoring**
-```cypher
-// Check database size
-CALL dbms.listConfig() YIELD name, value
-WHERE name = 'dbms.memory.heap.initial_size'
-RETURN name, value;
-
-// Monitor query performance
-PROFILE MATCH (cve:CVE) RETURN count(cve);
-```
-
-## 🎯 Future Enhancements
-
-### **Planned Features**
-- [ ] Real-time CVE data updates
-- [ ] Advanced graph visualization
-- [ ] Machine learning vulnerability prediction
-- [ ] MITRE ATT&CK integration
-- [ ] ExploitDB correlation
-- [ ] Threat intelligence feeds
-
-### **Performance Improvements**
-- [ ] Parallel processing for large datasets
-- [ ] Incremental updates
-- [ ] Advanced caching strategies
-- [ ] Query optimization
-
-## 📚 Additional Resources
-
-- **[Query Examples](neo4j_queries.md)** - Comprehensive Cypher query examples
-- **[Graph Analytics](graph_analytics.py)** - Analytics and insights engine
-- **[RAG System](../generators/rag_system.py)** - Retrieval-Augmented Generation system
-- **[Neo4j Documentation](https://neo4j.com/docs/)** - Official Neo4j documentation
-- **[Cypher Query Language](https://neo4j.com/docs/cypher-manual/current/)** - Cypher reference
-
-## 🤝 Contributing
-
-Contributions to the knowledge graph construction system are welcome:
-
-- **Data Source Integration**: Add support for new vulnerability data sources
-- **Analytics Enhancement**: Improve graph analytics and insights
-- **Performance Optimization**: Optimize loading and query performance
-- **Documentation**: Improve documentation and examples
-
-## 📄 License
-
-This component is part of the main project and is licensed under the MIT License. 
