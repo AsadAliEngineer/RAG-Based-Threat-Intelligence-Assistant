@@ -221,36 +221,17 @@ data/
 └── knowledge_graph/     # Neo4j-based KG (if using Neo4j)
 ```
 
-## 🧪 Testing
-
-```bash
-pytest
-```
-
-
-## 🎯 System Features
-
-### **RAG System Capabilities**
-- ✅ **Semantic Search**: Find CVEs by natural language queries
-- ✅ **LLM Responses**: AI-generated explanations of vulnerabilities
-- ✅ **Year-based Search**: Efficient search across CVE data by year
-- ✅ **Multiple Interfaces**: Web UI, API, and command-line access
-- ✅ **Real-time Processing**: Live query processing with vector search
-- ✅ **Comprehensive Coverage**: 190K+ CVEs from 1999-2025
-
-### **Technology Stack (Production Ready)**
-- **Vector DB**: ChromaDB (local, persistent)
-- **Embeddings**: BGE-Large-EN (1024 dimensions, high quality)
-- **LLM**: Llama 3.1 8B/70B via Ollama (open source, configurable)
-- **API Framework**: FastAPI (modern, fast, async, auto-documented)
-- **UI Framework**: Gradio (user-friendly web interface)
-- **Data Processing**: Pydantic (type safety, validation)
-
 ### **API Endpoints**
 - `POST /api/v1/query` - Full RAG queries with LLM responses
 - `POST /api/v1/search` - Vector search only
 - `POST /api/v1/summary` - Statistical analysis
 - `GET /api/v1/health` - System health check
+  
+## 🧪 Testing
+
+```bash
+pytest
+```
 
 ## 📄 License
 
