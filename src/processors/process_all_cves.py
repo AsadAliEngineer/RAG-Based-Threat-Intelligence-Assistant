@@ -16,6 +16,18 @@ import sys
 sys.path.append(str(Path(__file__).parent.parent.parent))
 from config import Config
 
+# Import the new extractors and enrichers
+from src.processors.extractors import (
+    extract_zip_files,
+    load_cwe_capec_mitre_mapping,
+    load_csaf_data,
+    load_exploitdb_data,
+    load_kev_data
+)
+from src.processors.enrichers import enrich_cve_with_cti, enrich_all_cves
+from src.processors.filters import filter_rejected_cves
+from src.processors.savers import save_processed_data
+
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
@@ -49,274 +61,24 @@ class CVEProcessor:
         self.csaf_data = []
         self.exploitdb_data = []
         self.cwe_capec_mitre_mapping = {}
-        
+        self.csaf_by_cve = {}
+        self.exploitdb_by_cve = {}
+        self.kev_by_cve = {}
+    
     def extract_zip_files(self):
-        """Extract all zipped CVE files"""
-        logger.info("Extracting zipped CVE files...")
-        
-        zip_files = list(self.zip_dir.glob("*.zip"))
-        if not zip_files:
-            logger.info("No zip files found to extract")
-            return
-        
-        for zip_file in zip_files:
-            logger.info(f"Extracting {zip_file.name}...")
-            try:
-                with zipfile.ZipFile(zip_file, 'r') as zip_ref:
-                    zip_ref.extractall(self.json_dir)
-                logger.info(f"Successfully extracted {zip_file.name}")
-            except Exception as e:
-                logger.error(f"Error extracting {zip_file.name}: {e}")
+        extract_zip_files(self.zip_dir, self.json_dir, logger)
     
     def load_cwe_capec_mitre_mapping(self):
-        """Load the CWE-CAPEC-MITRE mapping data"""
-        mapping_file = self.cti_raw_dir / "cwe_capec_mitre_mapping.json"
-        
-        if not mapping_file.exists():
-            logger.warning(f"Mapping file not found: {mapping_file}")
-            return
-        
-        try:
-            with open(mapping_file, 'r') as f:
-                self.cwe_capec_mitre_mapping = json.load(f)
-            logger.info(f"Loaded CWE-CAPEC-MITRE mapping with {len(self.cwe_capec_mitre_mapping)} entries")
-        except Exception as e:
-            logger.error(f"Error loading mapping file: {e}")
+        self.cwe_capec_mitre_mapping = load_cwe_capec_mitre_mapping(self.cti_raw_dir / "cwe_capec_mitre_mapping.json", logger)
     
     def load_csaf_data(self):
-        """Load CSAF data from processed files and create CVE-ID index"""
-        csaf_dir = self.cti_docs_dir / "csaf"
-        csaf_files = list(csaf_dir.glob("*.json"))
-        
-        # Create CVE-ID to CSAF entries mapping
-        self.csaf_by_cve = {}
-        
-        for file in csaf_files:
-            try:
-                with open(file, 'r') as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        entries = data
-                    else:
-                        entries = [data]
-                    
-                    for entry in entries:
-                        # Extract CVE IDs from CSAF entry
-                        cve_ids = self._extract_cve_ids_from_csaf(entry)
-                        for cve_id in cve_ids:
-                            if cve_id not in self.csaf_by_cve:
-                                self.csaf_by_cve[cve_id] = []
-                            self.csaf_by_cve[cve_id].append(entry)
-                        
-                        self.csaf_data.append(entry)
-            except Exception as e:
-                logger.error(f"Error loading CSAF file {file.name}: {e}")
-        
-        logger.info(f"Loaded {len(self.csaf_data)} CSAF entries with {len(self.csaf_by_cve)} CVE correlations")
+        self.csaf_data, self.csaf_by_cve = load_csaf_data(self.cti_docs_dir / "csaf", logger)
     
     def load_exploitdb_data(self):
-        """Load ExploitDB data from processed files and create CVE-ID index"""
-        exploitdb_dir = self.cti_docs_dir / "exploitdb"
-        exploitdb_files = list(exploitdb_dir.glob("*.json"))
-        
-        # Create CVE-ID to ExploitDB entries mapping
-        self.exploitdb_by_cve = {}
-        
-        for file in exploitdb_files:
-            try:
-                with open(file, 'r') as f:
-                    data = json.load(f)
-                    if isinstance(data, list):
-                        entries = data
-                    else:
-                        entries = [data]
-                    
-                    for entry in entries:
-                        # Extract CVE IDs from ExploitDB entry
-                        cve_ids = self._extract_cve_ids_from_exploitdb(entry)
-                        for cve_id in cve_ids:
-                            if cve_id not in self.exploitdb_by_cve:
-                                self.exploitdb_by_cve[cve_id] = []
-                            self.exploitdb_by_cve[cve_id].append(entry)
-                        
-                        self.exploitdb_data.append(entry)
-            except Exception as e:
-                logger.error(f"Error loading ExploitDB file {file.name}: {e}")
-        
-        logger.info(f"Loaded {len(self.exploitdb_data)} ExploitDB entries with {len(self.exploitdb_by_cve)} CVE correlations")
+        self.exploitdb_data, self.exploitdb_by_cve = load_exploitdb_data(self.cti_docs_dir / "exploitdb", logger)
     
-    def load_kev_data(self) -> List[Dict]:
-        """Load KEV data from processed files and create CVE-ID index"""
-        kev_dir = self.cti_docs_dir / "kev"
-        kev_files = list(kev_dir.glob("*.json"))
-        
-        # Create CVE-ID to KEV entries mapping
-        self.kev_by_cve = {}
-        
-        for file in kev_files:
-            try:
-                with open(file, 'r') as f:
-                    entry = json.load(f)
-                    
-                    # Extract CVE ID from the entry
-                    cve_id = entry.get('id', '')
-                    if cve_id and cve_id.startswith('CVE-'):
-                        # Store the full entry
-                        self.kev_by_cve[cve_id] = entry
-                        self.kev_data.append(entry)
-            except Exception as e:
-                logger.error(f"Error loading KEV file {file.name}: {e}")
-        
-        logger.info(f"Loaded {len(self.kev_data)} KEV entries")
-        return self.kev_data
-    
-    def _extract_cve_ids_from_csaf(self, csaf_entry: Dict) -> List[str]:
-        """Extract CVE IDs from CSAF entry"""
-        cve_ids = []
-        
-        # Check common CSAF fields for CVE references
-        vulnerabilities = csaf_entry.get('vulnerabilities', [])
-        for vuln in vulnerabilities:
-            cve_id = vuln.get('cve', '')
-            if cve_id and cve_id.startswith('CVE-'):
-                cve_ids.append(cve_id)
-        
-        # Also check other possible fields
-        for key, value in csaf_entry.items():
-            if isinstance(value, str) and 'CVE-' in value:
-                # Extract CVE IDs from string
-                import re
-                cve_matches = re.findall(r'CVE-\d{4}-\d+', value)
-                cve_ids.extend(cve_matches)
-        
-        return list(set(cve_ids))  # Remove duplicates
-    
-    def _extract_cve_ids_from_exploitdb(self, exploit_entry: Dict) -> List[str]:
-        """Extract CVE IDs from ExploitDB entry"""
-        cve_ids = []
-        
-        # Check for cve_refs field (primary field for CVE references)
-        cve_refs = exploit_entry.get('cve_refs', [])
-        if isinstance(cve_refs, list):
-            cve_ids.extend([ref for ref in cve_refs if ref.startswith('CVE-')])
-        
-        # Also check for cve_id field (fallback)
-        cve_id = exploit_entry.get('cve_id', '')
-        if cve_id and cve_id.startswith('CVE-'):
-            cve_ids.append(cve_id)
-        
-        # Check content field for CVE references
-        content = exploit_entry.get('content', '')
-        if content:
-            import re
-            cve_matches = re.findall(r'CVE-\d{4}-\d+', content)
-            cve_ids.extend(cve_matches)
-        
-        # Check codes field for CVE references
-        codes = exploit_entry.get('codes', '')
-        if codes:
-            import re
-            cve_matches = re.findall(r'CVE-\d{4}-\d+', codes)
-            cve_ids.extend(cve_matches)
-        
-        return list(set(cve_ids))  # Remove duplicates
-    
-    def enrich_cve_with_cti(self, cve: Dict) -> Dict:
-        """Enrich CVE with CWE-CAPEC-MITRE correlations and other CTI data"""
-        enriched_cve = cve.copy()
-        cve_id = cve.get('cve_id', '')
-        
-        # Get CWE IDs from the CVE (already available)
-        cwe_ids = cve.get('cwe_ids', [])
-        
-        # Enrich with CWE-CAPEC-MITRE mapping (fast lookup)
-        capec_refs = []
-        mitre_techniques = []
-        
-        for cwe_id in cwe_ids:
-            if cwe_id in self.cwe_capec_mitre_mapping:
-                mapping = self.cwe_capec_mitre_mapping[cwe_id]
-                capec_refs.extend(mapping.get('capecs', []))
-                mitre_techniques.extend(mapping.get('mitre_techniques', []))
-        
-        # Remove duplicates
-        capec_refs = list(set(capec_refs))
-        mitre_techniques = list(set(mitre_techniques))
-        
-        # Add to enriched CVE
-        enriched_cve['capec_refs'] = capec_refs
-        enriched_cve['mitre_techniques'] = mitre_techniques
-        
-        # Fast CVE-ID based correlations (O(1) lookup)
-        csaf_correlations = self.csaf_by_cve.get(cve_id, [])
-        exploitdb_correlations = self.exploitdb_by_cve.get(cve_id, [])
-        
-        enriched_cve['csaf_correlations'] = csaf_correlations
-        enriched_cve['exploitdb_correlations'] = exploitdb_correlations
-        enriched_cve['is_in_kev'] = cve_id in self.kev_by_cve
-        
-        # Extract IDs from correlations
-        enriched_cve['csaf_ids'] = self._extract_csaf_ids(csaf_correlations)
-        enriched_cve['exploitdb_ids'] = self._extract_exploitdb_ids(exploitdb_correlations)
-        
-        return enriched_cve
-    
-    def _extract_csaf_ids(self, csaf_correlations: List[Dict]) -> List[str]:
-        """Extract CSAF IDs from correlation entries"""
-        csaf_ids = []
-        for entry in csaf_correlations:
-            # Try different possible ID fields
-            csaf_id = entry.get('id') or entry.get('csaf_id') or entry.get('advisory_id')
-            if csaf_id:
-                csaf_ids.append(str(csaf_id))
-        return list(set(csaf_ids))  # Remove duplicates
-    
-    def _extract_exploitdb_ids(self, exploitdb_correlations: List[Dict]) -> List[str]:
-        """Extract ExploitDB IDs from correlation entries"""
-        exploit_ids = []
-        for entry in exploitdb_correlations:
-            # Try different possible ID fields
-            exploit_id = entry.get('id') or entry.get('exploit_id') or entry.get('edb_id')
-            if exploit_id:
-                exploit_ids.append(str(exploit_id))
-        return list(set(exploit_ids))  # Remove duplicates
-    
-    def filter_rejected_cves(self, cves: List[Dict]) -> List[Dict]:
-        """Filter out rejected CVEs based on description content"""
-        logger.info("Filtering out rejected CVEs...")
-        
-        original_count = len(cves)
-        filtered_cves = []
-        rejected_count = 0
-        
-        for cve in cves:
-            description = cve.get('description', '').lower()
-            
-            # Check for rejection indicators
-            rejection_indicators = [
-                'rejected reason',
-                'rejected:',
-                'rejection reason',
-                'this cve has been rejected',
-                'cve rejected',
-                'rejected cve',
-                'not a vulnerability',
-                'duplicate of',
-                'duplicate cve',
-                'withdrawn',
-                'withdrawal reason'
-            ]
-            
-            is_rejected = any(indicator in description for indicator in rejection_indicators)
-            
-            if is_rejected:
-                rejected_count += 1
-                logger.debug(f"Rejected CVE: {cve.get('cve_id', 'Unknown')} - {description[:100]}...")
-            else:
-                filtered_cves.append(cve)
-        
-        logger.info(f"Filtered out {rejected_count} rejected CVEs ({original_count - rejected_count} remaining)")
-        return filtered_cves
+    def load_kev_data(self):
+        self.kev_data, self.kev_by_cve = load_kev_data(self.cti_docs_dir / "kev", logger)
     
     def process_all_cve_files(self, max_cves: Optional[int] = None) -> List[Dict]:
         """Process all CVE files and extract structured data"""
@@ -355,7 +117,7 @@ class CVEProcessor:
                     break
         
         # Filter out rejected CVEs
-        self.all_cves = self.filter_rejected_cves(self.all_cves)
+        self.all_cves = filter_rejected_cves(self.all_cves, logger)
         
         logger.info(f"Processed {len(self.all_cves)} total CVEs (after filtering)")
         return self.all_cves
@@ -642,28 +404,6 @@ class CVEProcessor:
             logger.error(f"Error processing v2 CVE: {e}")
             return None
     
-    def enrich_all_cves(self):
-        """Enrich all CVEs with CTI correlations using efficient indexing"""
-        logger.info("Enriching CVEs with CTI correlations...")
-        
-        # Load all CTI data first (creates indexes)
-        self.load_cwe_capec_mitre_mapping()
-        self.load_kev_data()
-        self.load_csaf_data()
-        self.load_exploitdb_data()
-        
-        # Enrich each CVE (now very fast with indexed lookups)
-        enriched_cves = []
-        for i, cve in enumerate(self.all_cves):
-            if i % 1000 == 0:
-                logger.info(f"Enriching CVE {i+1}/{len(self.all_cves)}")
-            
-            enriched_cve = self.enrich_cve_with_cti(cve)
-            enriched_cves.append(enriched_cve)
-        
-        self.all_cves = enriched_cves
-        logger.info(f"Enriched {len(self.all_cves)} CVEs with CTI correlations")
-    
     def create_enhanced_documents(self) -> List[Dict]:
         """Create enhanced documents for the RAG system"""
         logger.info("Creating enhanced documents for RAG system...")
@@ -829,6 +569,8 @@ class CVEProcessor:
         
         return list(set(tags))  # Remove duplicates
     
+<<<<<<< HEAD
+=======
     def save_processed_data(self, enhanced_docs: List[Dict]):
         """Save processed data"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -878,6 +620,7 @@ class CVEProcessor:
         logger.info(f"Summary: {len(self.all_cves)} CVEs, {len(self.kev_data)} KEV entries, {len(enhanced_docs)} enhanced documents")
         logger.info(f"Correlations: {kev_count} CVEs in KEV, {csaf_correlations} CSAF correlations, {exploitdb_correlations} ExploitDB correlations")
     
+>>>>>>> e4768ae8d3512210925fbdbb8c63db119c443311
     def run_full_processing(self, max_cves: Optional[int] = None):
         """Run the complete processing pipeline"""
         logger.info("Starting full CVE processing pipeline...")
@@ -886,13 +629,27 @@ class CVEProcessor:
         self.process_all_cve_files(max_cves)
         
         # Enrich CVEs with CTI correlations
-        self.enrich_all_cves()
+        self.all_cves = enrich_all_cves(
+            self.all_cves,
+            self.kev_by_cve,
+            self.csaf_by_cve,
+            self.exploitdb_by_cve,
+            self.cwe_capec_mitre_mapping,
+            logger
+        )
         
         # Create enhanced documents
         enhanced_docs = self.create_enhanced_documents()
         
         # Save everything
-        self.save_processed_data(enhanced_docs)
+        save_processed_data(
+            enhanced_docs,
+            self.processed_dir,
+            self.all_cves,
+            self.kev_data,
+            self.cwe_capec_mitre_mapping,
+            logger
+        )
         
         logger.info("Full CVE processing completed!")
 
