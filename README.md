@@ -121,12 +121,16 @@ ORDER BY cve.cvss_v3_base_score DESC
    ```
 
 7. **Test RAG System**
+
+   Run the export script first to generate the RAG documents, and then test the RAG system.
+   
    ```bash
    cd ../generators
+   python export_kg_for_rag.py
    python rag_system.py
    ```
 
-8. **Explore the Graph**
+9. **Explore the Graph**
    - **Neo4j Browser**: need to login
    - **Analytics**: `python graph_analytics.py`
    - **Query Examples**: See `neo4j_queries.md`
