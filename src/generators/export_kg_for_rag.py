@@ -73,7 +73,7 @@ class KGExporter:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(documents, f, indent=2, ensure_ascii=False)
             
-            print(f"✅ Exported {len(documents)} CVE documents to {output_file}")
+            print(f"Exported {len(documents)} CVE documents to {output_file}")
             return documents
     
     def _create_embedding_text(self, cve: Dict, record: Any) -> str:
@@ -146,7 +146,7 @@ class KGExporter:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(products, f, indent=2, ensure_ascii=False)
             
-            print(f"✅ Exported {len(products)} product-vendor records to {output_file}")
+            print(f"Exported {len(products)} product-vendor records to {output_file}")
             return products
     
     def export_relationships(self):
@@ -210,7 +210,7 @@ class KGExporter:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(relationships, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Exported relationship data to {output_file}")
+        print(f"Exported relationship data to {output_file}")
         print(f"   - CVE-Product: {len(relationships['cve_product'])} relationships")
         print(f"   - CVE-CWE: {len(relationships['cve_cwe'])} relationships")
         print(f"   - CVE-CAPEC: {len(relationships['cve_capec'])} relationships")
@@ -268,12 +268,12 @@ class KGExporter:
         with open(output_file, 'w', encoding='utf-8') as f:
             json.dump(stats, f, indent=2, ensure_ascii=False)
         
-        print(f"✅ Exported graph statistics to {output_file}")
+        print(f"Exported graph statistics to {output_file}")
         return stats
     
     def run_full_export(self):
         """Run complete export for RAG development"""
-        print("🚀 Starting Knowledge Graph Export for RAG Development")
+        print("Starting Knowledge Graph Export for RAG Development")
         print("=" * 60)
         
         try:
@@ -308,16 +308,16 @@ class KGExporter:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
             
             print("\n" + "=" * 60)
-            print("✅ Knowledge Graph Export Complete!")
-            print(f"📁 Export directory: {self.export_dir}")
-            print(f"📄 Files created: {len(summary['export_summary']['files_created'])}")
-            print(f"📊 CVE documents: {len(cve_docs)}")
-            print(f"🏭 Product-vendor records: {len(product_data)}")
-            print(f"🔗 Total relationships: {summary['export_summary']['data_counts']['total_relationships']}")
-            print("\n🎯 Ready for RAG System Development!")
+            print("Knowledge Graph Export Complete!")
+            print(f"Export directory: {self.export_dir}")
+            print(f"Files created: {len(summary['export_summary']['files_created'])}")
+            print(f"CVE documents: {len(cve_docs)}")
+            print(f"Product-vendor records: {len(product_data)}")
+            print(f"Total relationships: {summary['export_summary']['data_counts']['total_relationships']}")
+            print("\n Ready for RAG System Development!")
             
         except Exception as e:
-            print(f"❌ Export failed: {e}")
+            print(f"Export failed: {e}")
             raise
         finally:
             self.close()
