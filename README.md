@@ -75,7 +75,7 @@ python src/constructors/run_cpe_extraction.py
 ```
 
 ### **Construction of KG and RAG System**
-
+```bash
 # Build the knowledge graph (JSON-based, no Neo4j required)
 python src/constructors/kg_builder_without_neo4j.py
 
