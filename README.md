@@ -1,4 +1,4 @@
-# 🔒 CVE Knowledge Graph & Security Intelligence System
+# CVE Knowledge Graph & Security Intelligence System
 
 This project combines a Neo4j knowledge graph (KG) for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. 
 
