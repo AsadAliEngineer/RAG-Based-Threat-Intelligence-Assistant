@@ -1,11 +1,17 @@
 # src/api/main.py
 """
-Main FastAPI application with Enhanced RAG System
+SIMPLIFIED FastAPI application with Enhanced RAG System
+This version focuses on the working CVERAGSystem implementation
 """
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import logging
+import sys
+import os
+
+# Add the project root to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Import routes and app_state
 from src.api.routes import router, app_state
@@ -19,9 +25,9 @@ logger = logging.getLogger(__name__)
 
 # Create FastAPI app
 app = FastAPI(
-    title="Enhanced CVE RAG System API",
-    description="Enhanced search system with comprehensive CVE indexes",
-    version="2.0.0"
+    title="Simplified CVE RAG System API",
+    description="Simplified, working search system for CVE data",
+    version="2.0.0-simplified"
 )
 
 # Add CORS middleware
@@ -36,54 +42,80 @@ app.add_middleware(
 # Include routes
 app.include_router(router)
 
+
 @app.on_event("startup")
 async def startup():
-    logger.info("Enhanced CVE RAG System API starting up...")
-    
-    # Initialize app_state with required components
+    logger.info("🚀 Simplified CVE RAG System API starting up...")
+
     try:
-        # Initialize the correct RAG System (the one that works with direct commands)
+        # Step 1: Initialize the working RAG System
+        logger.info("📊 Initializing CVE RAG System...")
         from src.generators.rag_system import CVERAGSystem
-        
-        logger.info("Initializing CVE RAG System...")
+
         rag_system = CVERAGSystem()
         app_state['rag_system'] = rag_system
-        
-        # Get system stats
-        stats = rag_system.get_collection_stats()
-        logger.info(f"RAG System ready: {stats.get('total_documents', 0):,} documents indexed")
-        
-        # Initialize other components (optional - will be handled gracefully if not available)
+
+        # Step 2: Verify it's working
+        try:
+            stats = rag_system.get_collection_stats()
+            total_docs = stats.get('total_documents', 0)
+            if total_docs == 0:
+                logger.warning("⚠️  No documents found in vector database. You may need to build it first.")
+                logger.warning("    Run: python -m src.generators.rag_system --build")
+            else:
+                logger.info(f"✅ RAG System ready: {total_docs:,} documents indexed")
+        except Exception as e:
+            logger.warning(f"⚠️  Could not get stats: {e}")
+
+        # Step 3: Test a simple search
+        try:
+            test_results = rag_system.search_cves("test", n_results=1)
+            logger.info(f"✅ Search test successful: {len(test_results)} results")
+        except Exception as e:
+            logger.warning(f"⚠️  Search test failed: {e}")
+
+        # Step 4: Initialize optional components
+        logger.info("🤖 Initializing optional components...")
+
+        # LLM Client (optional)
         try:
             from src.generation.llm_client import LLMClient
             llm_client = LLMClient()
             app_state['llm_client'] = llm_client
-            logger.info("LLM Client initialized")
-        except ImportError:
-            logger.warning("LLM Client not available - will use search-only mode")
+            logger.info("✅ LLM Client initialized")
+        except ImportError as e:
+            logger.info("ℹ️  LLM Client not available - API will work in search-only mode")
             app_state['llm_client'] = None
-            
-        try:
-            from src.retrieval.query_router import QueryRouter
-            query_router = QueryRouter()
-            app_state['query_router'] = query_router
-            logger.info("Query Router initialized")
-        except ImportError:
-            logger.warning("Query Router not available - will use basic routing")
-            app_state['query_router'] = None
-            
-        logger.info("✅ All components initialized successfully!")
-        
+        except Exception as e:
+            logger.warning(f"⚠️  LLM Client initialization failed: {e}")
+            app_state['llm_client'] = None
+
+        logger.info("🎉 Simplified API initialization complete!")
+        logger.info("📍 Available endpoints:")
+        logger.info("   - GET  /api/v1/health")
+        logger.info("   - POST /api/v1/search")
+        logger.info("   - POST /api/v1/query")
+        logger.info("   - POST /api/v1/summary")
+        logger.info("   - GET  /api/v1/stats")
+
     except Exception as e:
-        logger.error(f"❌ Failed to initialize components: {e}")
+        logger.error(f"❌ Critical initialization failure: {e}")
+        logger.error("   Please check that:")
+        logger.error("   1. Vector database is built (run with --build)")
+        logger.error("   2. CVE data files exist in data/knowledge_base/")
+        logger.error("   3. All dependencies are installed")
         raise
+
 
 @app.on_event("shutdown")
 async def shutdown():
-    logger.info("Enhanced CVE RAG System API shutting down...")
+    logger.info("👋 Simplified CVE RAG System API shutting down...")
+
 
 if __name__ == "__main__":
     import uvicorn
+
+    logger.info("🔥 Starting development server...")
     uvicorn.run(
         "src.api.main:app",
         host="0.0.0.0",
