@@ -2,7 +2,7 @@
 
 This directory contains the core components for building and managing the CVE knowledge graph using Neo4j. The system processes CVE data, extracts product information from CPE strings, and creates a comprehensive graph database for vulnerability analysis.
 
-## 📊 Current Knowledge Graph Statistics
+## Current Knowledge Graph Statistics
 
 Note that this knowledge graph is currently built using **CVE data from 2024 only**, sourced from:
 - **CVE Data File**: `data/knowledge_base/enhanced_documents_cve_2024.json` (149MB)
@@ -31,7 +31,7 @@ Note that this knowledge graph is currently built using **CVE data from 2024 onl
 - **Attack Patterns**: CAPEC-592, CAPEC-63, CAPEC-209 are most prevalent
 
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ```
 ┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
@@ -52,7 +52,7 @@ Note that this knowledge graph is currently built using **CVE data from 2024 onl
                                               └──────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### 1. **Setup Neo4j Schema**
 ```bash
@@ -76,7 +76,7 @@ python graph_analytics.py
 ### 4. **Explore in Neo4j Browser**
 
 
-## 📊 Data Schema
+## Data Schema
 
 ### **Node Types**
 
