@@ -17,13 +17,10 @@ class Config:
         self.cti_docs_dir = self.base_data_dir / "CTI" / "docs"
         self.system_data_dir = self.base_data_dir / "system"
         self.logs_dir = self.base_data_dir / "logs"
-        self.training_data_dir = self.base_data_dir / "training"
-        self.model_dir = self.project_root / "models" / "regressor"
         self.csaf_dir = self.cti_data_dir / "csaf"
         self.known_exploited_vuln_csv = self.cti_data_dir / "known_exploited_vulnerabilities.csv"
         self.es_file = self.system_data_dir / "ES_enriched.json"
-        self.vuln_train_file = self.training_data_dir / "vuln_train.jsonl"
-        self.asset_train_file = self.training_data_dir / "asset_train.jsonl"
+
 
         self.api_endpoints = {
             "mitre_attack": "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
@@ -33,15 +30,9 @@ class Config:
             "cti_data_dir": self.cti_data_dir,
             "cti_docs_dir": self.cti_docs_dir,
             "system_data_dir": self.system_data_dir,
-            "logs_dir": self.logs_dir,
-            "training_data_dir": self.training_data_dir,
-            "model_dir": self.model_dir
+            "logs_dir": self.logs_dir
         }
 
-        # LLM Configuration
-        self.llm_model_name = os.getenv("LLM_MODEL_NAME", "microsoft/DialoGPT-medium")
-        self.max_new_tokens = int(os.getenv("MAX_NEW_TOKENS", "512"))
-        self.temperature = float(os.getenv("TEMPERATURE", "0.7"))
         
         # Embedding Configuration
         self.embedding_model_name = os.getenv("EMBEDDING_MODEL_NAME", "all-MiniLM-L6-v2")
