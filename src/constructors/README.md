@@ -138,7 +138,7 @@ python -m src.generators.export_kg_for_rag_without_neo4j --full
 ```
 
 
-## 🔍 Data Schema
+##  Data Schema
 
 ### **Node Types**
 
@@ -197,7 +197,7 @@ python -m src.generators.export_kg_for_rag_without_neo4j --full
 - `(CVE)-[:BELONGS_TO_TACTIC]->(MITRE_TACTIC)` - CVE belongs to MITRE tactic
 - `(Product)-[:MANUFACTURED_BY]->(Vendor)` - Product is manufactured by vendor
 
-## 🔍 Advanced Query Examples
+## Advanced Query Examples
 
 ### **Neo4j Cypher Queries**
 
