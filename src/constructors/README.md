@@ -2,7 +2,7 @@
 
 This directory contains the core components for building and managing the CVE knowledge graph. The system processes CVE data, extracts product information from CPE strings, and creates a comprehensive graph database for vulnerability analysis. **Two workflows are supported: Neo4j-based and JSON-based (no Neo4j required).**
 
-## 📊 Current Knowledge Graph Statistics (Latest)
+## Current Knowledge Graph Statistics (Latest)
 
 ### **Complete Coverage (1999-2025)**
 - **CVE Data Files**: `data/knowledge_base/enhanced_documents_cve_*.json` (1999-2025)
@@ -45,14 +45,7 @@ This directory contains the core components for building and managing the CVE kn
 4. **Lenovo**: 4,123 vulnerabilities
 5. **Siemens**: 4,083 vulnerabilities
 
-### **Top Products by Vulnerability Count**
-1. **zemana antimalware**: 264 vulnerabilities
-2. **openbravo openbravo_erp**: 214 vulnerabilities
-3. **vmware esxi**: 213 vulnerabilities
-4. **wire wire-webapp**: 192 vulnerabilities
-5. **laf laf**: 140 vulnerabilities
-
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### **Two Workflow Options**
 
@@ -95,7 +88,7 @@ This directory contains the core components for building and managing the CVE kn
                                               └──────────────────┘
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### **Option 1: Neo4j-Based Workflow**
 
@@ -144,39 +137,6 @@ python -m src.generators.export_kg_for_rag_without_neo4j --full
 # data/knowledge_base/rag_exports/
 ```
 
-## 📁 File Structure
-
-### **Core Components**
-- `kg_builder_without_neo4j.py` - JSON-based knowledge graph builder
-- `enhanced_neo4j_loader.py` - Neo4j-based knowledge graph loader
-- `run_cpe_extraction.py` - CPE parsing and product/vendor extraction
-- `cpe_parser_system.py` - Advanced CPE parsing system
-- `setup_neo4j_schema.py` - Neo4j schema setup
-- `graph_analytics.py` - Graph analytics and statistics
-
-### **Output Files**
-```
-data/knowledge_base/
-├── knowledge_graph/                    # JSON-based KG
-│   ├── cves_nodes.json                # All CVE nodes
-│   ├── products_nodes.json            # All product nodes
-│   ├── vendors_nodes.json             # All vendor nodes
-│   ├── cwes_nodes.json                # All CWE nodes
-│   ├── capecs_nodes.json              # All CAPEC nodes
-│   ├── mitre_techniques_nodes.json    # All MITRE technique nodes
-│   ├── mitre_tactics_nodes.json       # All MITRE tactic nodes
-│   ├── *_relationships.json           # All relationship data
-│   ├── complete_knowledge_graph.json  # Complete graph structure
-│   └── knowledge_graph_statistics.json # Comprehensive statistics
-└── rag_exports/                       # RAG-ready data
-    ├── cve_documents_for_rag.json     # CVE documents with embedding text
-    ├── product_vendor_data.json       # Product/vendor data for RAG
-    ├── cwes_data.json                 # CWE data for RAG
-    ├── capecs_data.json               # CAPEC data for RAG
-    ├── mitre_techniques_data.json     # MITRE techniques for RAG
-    ├── mitre_tactics_data.json        # MITRE tactics for RAG
-    └── rag_export_statistics.json     # RAG export statistics
-```
 
 ## 🔍 Data Schema
 
@@ -283,24 +243,3 @@ high_risk_vendors = [
 ]
 ```
 
-## 🚀 Next Steps
-
-### **RAG System Development**
-1. **Vector Database Setup** (ChromaDB)
-2. **Embedding Generation** (BGE-Large-EN)
-3. **LLM Integration** (Ollama + Llama 3.1)
-4. **FastAPI Service** (Query Interface)
-5. **Hybrid Search Engine** (Vector + Keyword + Graph)
-
-### **Advanced Analytics**
-1. **Vulnerability Trend Analysis**
-2. **Risk Scoring Models**
-3. **Vendor Security Posture Assessment**
-4. **Threat Intelligence Correlation**
-
-## 📚 Additional Resources
-
-- **Neo4j Queries**: `neo4j_queries.md` - Example Cypher queries
-- **Graph Analytics**: `graph_analytics.py` - Analytics and statistics
-- **CPE Parser**: `cpe_parser_system.py` - Advanced CPE parsing
-- **Configuration**: `config.py` - System configuration
