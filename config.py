@@ -13,6 +13,8 @@ class Config:
         # Project root is the directory containing this config.py
         self.project_root = Path(__file__).resolve().parent
         self.base_data_dir = self.project_root / "data"
+        self.knowledge_base_dir = self.base_data_dir / "knowledge_base"
+        self.enhanced_documents_path = self.knowledge_base_dir / "enhanced_documents_cve_2024.json"
         self.cti_data_dir = self.base_data_dir / "CTI" / "raw"
         self.cti_docs_dir = self.base_data_dir / "CTI" / "docs"
         self.system_data_dir = self.base_data_dir / "system"

@@ -86,12 +86,10 @@ ORDER BY cve.cvss_v3_base_score DESC
      -e NEO4J_PLUGINS='["apoc"]' \
      neo4j:latest
    ```
-   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
-
 
 3. **Collect, Correlate, and Process Data**
 
-   Put your downloaded zipped CVE in data/CVE/zip folder, such as "nvdcve-2.0-2024.json.zip" here, and proceed the following:
+   Put your downloaded zipped CVE in data/CVE/zip folder, and proceed the following:
    
    ```bash
    cd src/collectors
@@ -104,8 +102,6 @@ ORDER BY cve.cvss_v3_base_score DESC
    # Correlates and enriches the collected data, producing processed CVE and CPE documents for graph construction.
    ```
 
-    Find the processed data (e.g., "enhanced_documents_cve_2024.json") in folder "data/CVE/processed" and put it under the folder "data/knowledge_base" before proceeding with the next steps.
-
 5. **Parse CPEs and Extract Products/Vendors**
    ```bash
    cd ../constructors
@@ -113,7 +109,8 @@ ORDER BY cve.cvss_v3_base_score DESC
    # Parses CPE strings from processed CVE data, extracts and normalizes products and vendors,
    # and outputs structured product/vendor data for graph construction.
    ```
-  
+   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
+
 6. **Build Knowledge Graph**
    ```bash
    cd ../constructors
@@ -122,20 +119,49 @@ ORDER BY cve.cvss_v3_base_score DESC
    ```
 
 7. **Test RAG System**
-
-   Run the export script first to generate the RAG documents, and then test the RAG system.
-   
    ```bash
    cd ../generators
-   python export_kg_for_rag.py
    python rag_system.py
    ```
 
-9. **Explore the Graph**
+8. **Explore the Graph**
    - **Neo4j Browser**: need to login
    - **Analytics**: `python graph_analytics.py`
    - **Query Examples**: See `neo4j_queries.md`
 
+
+## 🧩 Modular CTI Data Conversion Pipeline
+
+The CTI data conversion process is now fully modular and extensible. Each data type (KEV, CSAF, CAPEC, ATT&CK, etc.) is handled by its own converter class, and the main orchestrator script runs all conversions in a clean, maintainable way.
+
+### **How to Run the Modular CTI Conversion**
+
+From the project root:
+
+```bash
+cd src/collectors/data_collection
+python convert_cti_raw_to_docs.py
+```
+
+This will:
+- Convert all supported CTI data sources (KEV, CSAF, CAPEC, ATT&CK, etc.)
+- Output processed JSON documents to the appropriate folders in `data/CTI/docs/`
+- Log the process to `data/logs/cti_conversion.log`
+
+### **Adding New Data Types**
+To add a new data type, simply implement a new converter class in `cti_converters/` and add it to the orchestrator script.
+
+
+## 🧪 Testing
+
+To run all tests (requires pytest):
+
+```bash
+pip install pytest
+pytest src/collectors/data_collection
+```
+
+If you add new modules or converters, add corresponding tests in the same directory or a `tests/` subfolder.
 
 ## 📁 Project Structure
 
@@ -163,3 +189,61 @@ data/
 ## 🤝 Contributing
 
 Contributions are welcome for additional data source integrations, enhanced analytics algorithms, graph visualization improvements, and documentation.
+
+## Neo4j Setup with Docker Compose
+
+### 1. Configure Environment Variables
+Copy the example environment file and set your own password:
+
+```bash
+cp .env.example .env
+# Then edit .env to set your own password
+```
+
+Do NOT commit your real .env file to version control.
+
+## RAG System and Knowledge Graph Export: Quick Usage
+
+All configuration is centralized in `src/generators/rag_config.py`.
+
+### Export Knowledge Graph Data
+
+From the project root, run:
+
+- Export CVE documents:
+  ```bash
+  python -m src.generators.export_kg_for_rag --cve
+  ```
+- Export product-vendor data:
+  ```bash
+  python -m src.generators.export_kg_for_rag --product_vendor
+  ```
+- Export relationships:
+  ```bash
+  python -m src.generators.export_kg_for_rag --relationships
+  ```
+- Export statistics:
+  ```bash
+  python -m src.generators.export_kg_for_rag --stats
+  ```
+- Run full export (all steps):
+  ```bash
+  python -m src.generators.export_kg_for_rag --full
+  ```
+
+### Run the RAG System
+
+- Build the vector database:
+  ```bash
+  python -m src.generators.rag_system --build
+  ```
+- Search for a query:
+  ```bash
+  python -m src.generators.rag_system --search "SQL injection vulnerabilities"
+  ```
+- Get a vulnerability summary:
+  ```bash
+  python -m src.generators.rag_system --summary "SQL injection"
+  ```
+
+For more options, use `--help` with either script.
