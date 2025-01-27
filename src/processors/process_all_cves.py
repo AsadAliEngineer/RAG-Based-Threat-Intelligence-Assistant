@@ -266,7 +266,7 @@ class CVEProcessor:
             
             for vuln in vulnerabilities:
                 cve_data = vuln.get('cve', {})
-                configurations = vuln.get('configurations', {})
+                configurations = cve_data.get('configurations', [])
                 cve_id = cve_data.get('id', '')
                 
                 if cve_id:

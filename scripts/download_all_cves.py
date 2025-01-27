@@ -17,8 +17,8 @@ def download_cve_data():
     target_dir = script_dir.parent / "data" / "CVE" / "zip"
     target_dir.mkdir(parents=True, exist_ok=True)
     
-    # NVD CVE base URL
-    base_url = "https://nvd.nist.gov/feeds/json/cve/1.1"
+    # NVD CVE base URL (current feeds)
+    base_url = "https://nvd.nist.gov/feeds/json/cve/2.0"
     
     # Get current year
     import datetime
@@ -28,7 +28,7 @@ def download_cve_data():
     
     # Download CVE data for each year
     for year in range(2002, current_year + 1):
-        filename = f"nvdcve-1.1-{year}.json.zip"
+        filename = f"nvdcve-2.0-{year}.json.zip"
         url = f"{base_url}/{filename}"
         target_file = target_dir / filename
         
@@ -58,7 +58,7 @@ def download_cve_data():
             continue
     
     # Also download the modified CVE feed (contains recent updates)
-    modified_filename = "nvdcve-1.1-modified.json.zip"
+    modified_filename = "nvdcve-2.0-modified.json.zip"
     modified_url = f"{base_url}/{modified_filename}"
     modified_target_file = target_dir / modified_filename
     

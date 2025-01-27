@@ -39,8 +39,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
-app.include_router(router)
+# Include routes under versioned API prefix
+app.include_router(router, prefix="/api/v1")
 
 
 @app.on_event("startup")
