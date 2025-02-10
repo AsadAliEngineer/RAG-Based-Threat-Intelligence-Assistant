@@ -1,7 +1,8 @@
 # data_collection/convert_cti_raw_to_docs.py
+
 import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent.parent))
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from config import Config
 import csv
 import json
