@@ -34,6 +34,9 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    ```
 
 3. **Collect, Correlate, and Process Data**
+
+   Put your downloaded zipped CVE in data/CVE/zip folder, and proceed the following:
+   
    ```bash
    cd src/collectors
    python main_collector.py
@@ -45,7 +48,7 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    # Correlates and enriches the collected data, producing processed CVE and CPE documents for graph construction.
    ```
 
-4. **Parse CPEs and Extract Products/Vendors**
+5. **Parse CPEs and Extract Products/Vendors**
    ```bash
    cd ../constructors
    python run_cpe_extraction.py
@@ -54,20 +57,20 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    ```
    > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
 
-5. **Build Knowledge Graph**
+6. **Build Knowledge Graph**
    ```bash
    cd ../constructors
    python setup_neo4j_schema.py
    python enhanced_neo4j_loader.py --stats
    ```
 
-6. **Test RAG System**
+7. **Test RAG System**
    ```bash
    cd ../generators
    python rag_system.py
    ```
 
-7. **Explore the Graph**
+8. **Explore the Graph**
    - **Neo4j Browser**: need to login
    - **Analytics**: `python graph_analytics.py`
    - **Query Examples**: See `neo4j_queries.md`
