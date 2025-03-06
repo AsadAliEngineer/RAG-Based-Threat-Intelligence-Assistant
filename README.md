@@ -98,8 +98,34 @@ python src/constructors/networkx_graph_builder.py
 # Build vector database with graph-enhanced embeddings
 python -m src.generators.rag_system --build
 ```
+### **Step 5: LLM Training (Optional)**
+### **Step 5a: Prepare Training Dataset**
+```bash
+# Create training dataset from knowledge graph
+python src/training/dataset_preparation.py
 
-### **Step 5: Start Services**
+# Analyze data quality if needed
+python src/training/run_data_analysis.py
+```
+
+### **Step 5b: Check System Requirements**
+```bash
+# Verify system can handle training
+python src/training/system_check.py
+```
+
+### **Step 5c: Run Fine-Tuning**
+```bash
+python src/training/production_training.py
+```
+
+### **Step 5d: Test Fine-Tuned Model**
+```bash
+# Test the fine-tuned model
+python src/training/hf_inference_engine.py
+```
+
+### **Step 6: Start Services**
 ```bash
 # Terminal 1: Start API Server
 python -m uvicorn src.api.main:app --host 0.0.0.0 --port 8000 --reload
