@@ -833,9 +833,14 @@ class CVEProcessor:
         """Save processed data"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Save enhanced documents
+        # Save enhanced documents with timestamp
         docs_file = self.processed_dir / f"enhanced_documents_{timestamp}.json"
         with open(docs_file, 'w') as f:
+            json.dump(enhanced_docs, f, indent=2)
+        
+        # Also save with the expected filename for CPE extraction
+        expected_filename = self.processed_dir / "enhanced_documents_cve_2024.json"
+        with open(expected_filename, 'w') as f:
             json.dump(enhanced_docs, f, indent=2)
         
         # Calculate correlation statistics
@@ -860,7 +865,8 @@ class CVEProcessor:
                 'cwe_capec_mitre_mappings_loaded': len(self.cwe_capec_mitre_mapping)
             },
             'files': {
-                'enhanced_documents': str(docs_file)
+                'enhanced_documents': str(docs_file),
+                'enhanced_documents_cve_2024': str(expected_filename)
             }
         }
         
