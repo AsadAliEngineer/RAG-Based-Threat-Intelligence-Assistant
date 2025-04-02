@@ -29,7 +29,13 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    docker-compose up -d
    ```
 
-2. **Run the Data Pipeline**
+2. **Download 2024 CVE Data**
+   ```bash
+   bash scripts/download_cve_2024.sh
+   ```
+   This will download the latest 2024 CVE data from NVD into `data/CVE/zip/`.
+
+3. **Run the Data Pipeline**
    ```bash
    # Collect and process data
    python src/collectors/main_collector.py
@@ -43,7 +49,7 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    python src/constructors/enhanced_neo4j_loader.py --stats
    ```
 
-3. **Export for RAG & Run RAG System**
+4. **Export for RAG & Run RAG System**
    ```bash
    # Export KG data for RAG
    python -m src.generators.export_kg_for_rag --full
