@@ -2,7 +2,44 @@
 
 This project combines a Neo4j knowledge graph (KG) for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. 
 
-## 🚀 Quick Start
+## Usage Examples
+
+### **RAG System Queries**
+```python
+from generators.rag_system import CVERAGSystem
+
+# Initialize RAG system
+rag = CVERAGSystem()
+
+# Search for vulnerabilities with rich context
+results = rag.search_cves("SQL injection vulnerabilities", n_results=3)
+# Output includes: CVE ID, severity, affected products/vendors, 
+# CWE weaknesses, CAPEC attack patterns, and similarity scores
+
+# Example output:
+# CVE-2024-45174 (HIGH)
+#   Products: cloudclassroom-php_project
+#   Vendors: vishalmathur  
+#   CWE: CWE-89
+#   CAPEC: CAPEC-108, CAPEC-470, CAPEC-7, CAPEC-110, CAPEC-109, CAPEC-66
+
+# Get vulnerability summary
+summary = rag.get_vulnerability_summary("Cross-site scripting")
+
+# Find similar CVEs
+similar = rag.get_similar_cves("CVE-2024-12345")
+```
+
+### **Graph Database Queries**
+```cypher
+// Find CVEs by vendor
+MATCH (cve:CVE)-[:AFFECTS]->(product:Product)-[:MANUFACTURED_BY]->(vendor:Vendor)
+WHERE vendor.name =~ '(?i).*microsoft.*'
+RETURN cve.id, cve.cvss_v3_severity, product.name
+ORDER BY cve.cvss_v3_base_score DESC
+```
+
+##  Quick Start
 
 ### Prerequisites
 - Python 3.8+
@@ -93,42 +130,6 @@ data/
 └── reports/               # Analysis Reports
 ```
 
-## 🚀 Usage Examples
-
-### **RAG System Queries**
-```python
-from generators.rag_system import CVERAGSystem
-
-# Initialize RAG system
-rag = CVERAGSystem()
-
-# Search for vulnerabilities with rich context
-results = rag.search_cves("SQL injection vulnerabilities", n_results=3)
-# Output includes: CVE ID, severity, affected products/vendors, 
-# CWE weaknesses, CAPEC attack patterns, and similarity scores
-
-# Example output:
-# CVE-2024-45174 (HIGH)
-#   Products: cloudclassroom-php_project
-#   Vendors: vishalmathur  
-#   CWE: CWE-89
-#   CAPEC: CAPEC-108, CAPEC-470, CAPEC-7, CAPEC-110, CAPEC-109, CAPEC-66
-
-# Get vulnerability summary
-summary = rag.get_vulnerability_summary("Cross-site scripting")
-
-# Find similar CVEs
-similar = rag.get_similar_cves("CVE-2024-12345")
-```
-
-### **Graph Database Queries**
-```cypher
-// Find CVEs by vendor
-MATCH (cve:CVE)-[:AFFECTS]->(product:Product)-[:MANUFACTURED_BY]->(vendor:Vendor)
-WHERE vendor.name =~ '(?i).*microsoft.*'
-RETURN cve.id, cve.cvss_v3_severity, product.name
-ORDER BY cve.cvss_v3_base_score DESC
-```
 
 ## 📚 Documentation
 
