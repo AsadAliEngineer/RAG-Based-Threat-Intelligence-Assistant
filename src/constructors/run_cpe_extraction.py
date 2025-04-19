@@ -1,7 +1,8 @@
 import json
 from pathlib import Path
-from cpe_parser_system import ProductExtractor
+from src.constructors.cpe_parser_system import ProductExtractor
 from tqdm import tqdm
+from config import Config
 
 def cpecomponent_to_dict(obj):
     if hasattr(obj, '__dict__'):
@@ -12,9 +13,9 @@ def cpecomponent_to_dict(obj):
         return [cpecomponent_to_dict(i) for i in obj]
     return obj
 
-# Path to the processed CVE dataset (adjust if needed)
-CVE_FILE = Path(__file__).parent.parent.parent / 'data' / 'CVE' / 'processed' / 'enhanced_documents_cve_2024.json'
-OUTPUT_FILE = Path(__file__).parent.parent.parent / 'data' / 'knowledge_base' / 'cpe_parsing_results_full.json'
+config = Config()
+CVE_FILE = config.enhanced_documents_path
+OUTPUT_FILE = config.knowledge_base_dir / 'cpe_parsing_results_full.json'
 
 
 def load_all_cves(filename):

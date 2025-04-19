@@ -12,6 +12,14 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 from neo4j import GraphDatabase
 import logging
+from src.constructors.kg_builder import (
+    create_cve_node,
+    create_cwe_nodes,
+    create_capec_nodes,
+    create_product_vendor_nodes,
+    create_cve_product_relationships
+)
+from config import Config
 
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,166 +62,28 @@ class EnhancedNeo4jLoader:
     def create_cve_node(self, cve_id: str, cve_doc: Dict[str, Any]):
         """Create a CVE node with rich metadata"""
         with self.driver.session() as session:
-            # Extract CVSS metrics
-            cvss_v3 = cve_doc.get('cvss_v3', {})
-            
-            # Create CVE node with all available metadata
-            query = """
-            MERGE (cve:CVE {id: $cve_id})
-            SET cve.title = $title,
-                cve.description = $description,
-                cve.source = $source,
-                cve.published_date = $published_date,
-                cve.modified_date = $modified_date,
-                cve.cvss_v3_base_score = $cvss_base_score,
-                cve.cvss_v3_vector = $cvss_vector,
-                cve.cvss_v3_severity = $cvss_severity,
-                cve.attack_vector = $attack_vector,
-                cve.attack_complexity = $attack_complexity,
-                cve.privileges_required = $privileges_required,
-                cve.user_interaction = $user_interaction,
-                cve.scope = $scope,
-                cve.confidentiality_impact = $confidentiality_impact,
-                cve.integrity_impact = $integrity_impact,
-                cve.availability_impact = $availability_impact,
-                cve.cwe_refs = $cwe_refs,
-                cve.capec_refs = $capec_refs,
-                cve.affected_products = $affected_products
-            """
-            
-            session.run(query, {
-                'cve_id': cve_id,
-                'title': cve_doc.get('title', ''),
-                'description': cve_doc.get('content', ''),
-                'source': cve_doc.get('source', ''),
-                'published_date': cve_doc.get('published_date', ''),
-                'modified_date': cve_doc.get('modified_date', ''),
-                'cvss_base_score': cvss_v3.get('base_score'),
-                'cvss_vector': cvss_v3.get('vector_string', ''),
-                'cvss_severity': cvss_v3.get('base_severity', ''),
-                'attack_vector': cvss_v3.get('attack_vector', ''),
-                'attack_complexity': cvss_v3.get('attack_complexity', ''),
-                'privileges_required': cvss_v3.get('privileges_required', ''),
-                'user_interaction': cvss_v3.get('user_interaction', ''),
-                'scope': cvss_v3.get('scope', ''),
-                'confidentiality_impact': cvss_v3.get('confidentiality_impact', ''),
-                'integrity_impact': cvss_v3.get('integrity_impact', ''),
-                'availability_impact': cvss_v3.get('availability_impact', ''),
-                'cwe_refs': cve_doc.get('cwe_refs', []),
-                'capec_refs': cve_doc.get('capec_refs', []),
-                'affected_products': cve_doc.get('affected_products', [])
-            })
+            create_cve_node(session, cve_id, cve_doc)
             
     def create_cwe_nodes(self, cve_id: str, cwe_refs: List[str]):
         """Create CWE nodes and relationships"""
         with self.driver.session() as session:
-            for cwe_id in cwe_refs:
-                # Create CWE node
-                session.run("""
-                    MERGE (cwe:CWE {id: $cwe_id})
-                """, {'cwe_id': cwe_id})
-                
-                # Create relationship
-                session.run("""
-                    MATCH (cve:CVE {id: $cve_id})
-                    MATCH (cwe:CWE {id: $cwe_id})
-                    MERGE (cve)-[:HAS_WEAKNESS]->(cwe)
-                """, {'cve_id': cve_id, 'cwe_id': cwe_id})
+            create_cwe_nodes(session, cve_id, cwe_refs)
                 
     def create_capec_nodes(self, cve_id: str, capec_refs: List[str]):
         """Create CAPEC nodes and relationships"""
         with self.driver.session() as session:
-            for capec_id in capec_refs:
-                # Create CAPEC node
-                session.run("""
-                    MERGE (capec:CAPEC {id: $capec_id})
-                """, {'capec_id': capec_id})
-                
-                # Create relationship
-                session.run("""
-                    MATCH (cve:CVE {id: $cve_id})
-                    MATCH (capec:CAPEC {id: $capec_id})
-                    MERGE (cve)-[:HAS_ATTACK_PATTERN]->(capec)
-                """, {'cve_id': cve_id, 'capec_id': capec_id})
+            create_capec_nodes(session, cve_id, capec_refs)
                 
     def create_product_vendor_nodes(self, product_key: str, product_data: Dict[str, Any]):
         """Create Product and Vendor nodes from CPE data"""
         with self.driver.session() as session:
-            vendor_name = product_data.get('vendor', '')
-            product_name = product_data.get('product', '')
+            create_product_vendor_nodes(session, product_key, product_data)
             
-            # Create Vendor node
-            session.run("""
-                MERGE (vendor:Vendor {name: $vendor_name})
-            """, {'vendor_name': vendor_name})
-            
-            # Create Product node
-            session.run("""
-                MERGE (product:Product {name: $product_name, vendor: $vendor_name})
-                SET product.display_name = $display_name,
-                    product.category = $category,
-                    product.family = $family,
-                    product.criticality_score = $criticality_score
-            """, {
-                'product_name': product_name,
-                'vendor_name': vendor_name,
-                'display_name': product_data.get('display_name', ''),
-                'category': product_data.get('category', ''),
-                'family': product_data.get('family', ''),
-                'criticality_score': product_data.get('criticality_score', 0.0)
-            })
-            
-            # Create relationship
-            session.run("""
-                MATCH (product:Product {name: $product_name, vendor: $vendor_name})
-                MATCH (vendor:Vendor {name: $vendor_name})
-                MERGE (product)-[:MANUFACTURED_BY]->(vendor)
-            """, {'product_name': product_name, 'vendor_name': vendor_name})
-            
-            # Create version nodes
-            versions = product_data.get('versions', {})
-            for version_key, version_data in versions.items():
-                if version_key != '*':  # Skip wildcard versions
-                    session.run("""
-                        MERGE (version:Version {version: $version, product: $product_name})
-                        SET version.version_type = $version_type,
-                            version.raw = $raw_version
-                    """, {
-                        'version': version_key,
-                        'product_name': product_name,
-                        'version_type': version_data.get('version_info', {}).get('type', ''),
-                        'raw_version': version_data.get('version_info', {}).get('raw', '')
-                    })
-                    
-                    # Create relationship
-                    session.run("""
-                        MATCH (product:Product {name: $product_name, vendor: $vendor_name})
-                        MATCH (version:Version {version: $version, product: $product_name})
-                        MERGE (product)-[:HAS_VERSION]->(version)
-                    """, {
-                        'product_name': product_name,
-                        'vendor_name': vendor_name,
-                        'version': version_key
-                    })
-                    
     def create_cve_product_relationships(self, cve_id: str, affected_products: List[str]):
         """Create relationships between CVEs and affected products"""
         with self.driver.session() as session:
-            for product_name in affected_products:
-                # Find matching products in CPE data
-                for product_key, product_data in self.cpe_data.get('products', {}).items():
-                    if product_data.get('product', '').lower() == product_name.lower():
-                        session.run("""
-                            MATCH (cve:CVE {id: $cve_id})
-                            MATCH (product:Product {name: $product_name, vendor: $vendor_name})
-                            MERGE (cve)-[:AFFECTS]->(product)
-                        """, {
-                            'cve_id': cve_id,
-                            'product_name': product_data.get('product', ''),
-                            'vendor_name': product_data.get('vendor', '')
-                        })
-                        break
-                        
+            create_cve_product_relationships(session, cve_id, affected_products)
+                
     def load_knowledge_graph(self, limit: Optional[int] = None):
         """Load the complete knowledge graph"""
         logger.info("Starting enhanced knowledge graph loading...")
@@ -295,12 +165,13 @@ class EnhancedNeo4jLoader:
 
 def main():
     parser = argparse.ArgumentParser(description="Enhanced Neo4j Knowledge Graph Loader")
+    config = Config()
     parser.add_argument("--cve-file", 
-                       default="../../data/knowledge_base/enhanced_documents_cve_2024.json",
-                       help="Path to processed CVE data file")
+                       default=str(config.enhanced_documents_path),
+                       help="Path to processed CVE data file (default: knowledge_base/enhanced_documents_cve_2024.json)")
     parser.add_argument("--cpe-file",
-                       default="../../data/knowledge_base/cpe_parsing_results_full.json", 
-                       help="Path to CPE parsing results file")
+                       default=str(config.knowledge_base_dir / 'cpe_parsing_results_full.json'),
+                       help="Path to CPE parsing results file (default: knowledge_base/cpe_parsing_results_full.json)")
     parser.add_argument("--uri", default="bolt://localhost:7687", help="Neo4j URI")
     parser.add_argument("--user", default="neo4j", help="Neo4j username")
     parser.add_argument("--password", default="password", help="Neo4j password")
