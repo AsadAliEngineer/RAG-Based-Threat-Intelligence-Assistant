@@ -1,0 +1,467 @@
+{
+  "timestamp": "2025-07-02T13:32:01.726498",
+  "basic_stats": {
+    "nodes": [
+      {
+        "NodeType": [
+          "Product"
+        ],
+        "Count": 14499
+      },
+      {
+        "NodeType": [
+          "Vendor"
+        ],
+        "Count": 4117
+      },
+      {
+        "NodeType": [
+          "CVE"
+        ],
+        "Count": 38995
+      },
+      {
+        "NodeType": [
+          "Version"
+        ],
+        "Count": 10323
+      },
+      {
+        "NodeType": [
+          "CWE"
+        ],
+        "Count": 549
+      },
+      {
+        "NodeType": [
+          "CAPEC"
+        ],
+        "Count": 436
+      }
+    ],
+    "relationships": [
+      {
+        "RelationshipType": "MANUFACTURED_BY",
+        "Count": 14499
+      },
+      {
+        "RelationshipType": "AFFECTS",
+        "Count": 106234
+      },
+      {
+        "RelationshipType": "HAS_VERSION",
+        "Count": 10478
+      },
+      {
+        "RelationshipType": "HAS_WEAKNESS",
+        "Count": 38384
+      },
+      {
+        "RelationshipType": "HAS_ATTACK_PATTERN",
+        "Count": 240480
+      }
+    ]
+  },
+  "cve_analysis": {
+    "by_year": [
+      {
+        "Year": "CVE",
+        "CVECount": 1367
+      },
+      {
+        "Year": "2024",
+        "CVECount": 37628
+      }
+    ],
+    "top_vendors": [
+      {
+        "Vendor": "linux",
+        "CVECount": 2439
+      },
+      {
+        "Vendor": "microsoft",
+        "CVECount": 1461
+      },
+      {
+        "Vendor": "apple",
+        "CVECount": 819
+      },
+      {
+        "Vendor": "adobe",
+        "CVECount": 763
+      },
+      {
+        "Vendor": "samsung",
+        "CVECount": 664
+      },
+      {
+        "Vendor": "tenda",
+        "CVECount": 395
+      },
+      {
+        "Vendor": "oracle",
+        "CVECount": 339
+      },
+      {
+        "Vendor": "oretnom23",
+        "CVECount": 313
+      },
+      {
+        "Vendor": "ibm",
+        "CVECount": 300
+      },
+      {
+        "Vendor": "debian",
+        "CVECount": 259
+      },
+      {
+        "Vendor": "totolink",
+        "CVECount": 258
+      },
+      {
+        "Vendor": "google",
+        "CVECount": 256
+      },
+      {
+        "Vendor": "fedoraproject",
+        "CVECount": 251
+      },
+      {
+        "Vendor": "dell",
+        "CVECount": 232
+      },
+      {
+        "Vendor": "qualcomm",
+        "CVECount": 229
+      },
+      {
+        "Vendor": "campcodes",
+        "CVECount": 225
+      },
+      {
+        "Vendor": "dlink",
+        "CVECount": 198
+      },
+      {
+        "Vendor": "mozilla",
+        "CVECount": 190
+      },
+      {
+        "Vendor": "phpgurukul",
+        "CVECount": 185
+      },
+      {
+        "Vendor": "cisco",
+        "CVECount": 171
+      }
+    ],
+    "top_products": [
+      {
+        "Product": "linux_kernel",
+        "Vendor": "linux",
+        "CVECount": 2439
+      },
+      {
+        "Product": "macos",
+        "Vendor": "apple",
+        "CVECount": 728
+      },
+      {
+        "Product": "windows_server_2022_23h2",
+        "Vendor": "microsoft",
+        "CVECount": 603
+      },
+      {
+        "Product": "windows_server_2019",
+        "Vendor": "microsoft",
+        "CVECount": 589
+      },
+      {
+        "Product": "windows_server_2022",
+        "Vendor": "microsoft",
+        "CVECount": 587
+      },
+      {
+        "Product": "android",
+        "Vendor": "samsung",
+        "CVECount": 583
+      },
+      {
+        "Product": "windows_11_22h2",
+        "Vendor": "microsoft",
+        "CVECount": 549
+      },
+      {
+        "Product": "windows_11_23h2",
+        "Vendor": "microsoft",
+        "CVECount": 546
+      },
+      {
+        "Product": "windows_10_22h2",
+        "Vendor": "microsoft",
+        "CVECount": 526
+      },
+      {
+        "Product": "windows_10_21h2",
+        "Vendor": "microsoft",
+        "CVECount": 517
+      },
+      {
+        "Product": "windows_server_2016",
+        "Vendor": "microsoft",
+        "CVECount": 502
+      },
+      {
+        "Product": "windows_10_1809",
+        "Vendor": "microsoft",
+        "CVECount": 499
+      },
+      {
+        "Product": "windows_11_21h2",
+        "Vendor": "microsoft",
+        "CVECount": 460
+      },
+      {
+        "Product": "windows",
+        "Vendor": "microsoft",
+        "CVECount": 452
+      },
+      {
+        "Product": "windows_server_2012",
+        "Vendor": "microsoft",
+        "CVECount": 420
+      },
+      {
+        "Product": "windows_10_1607",
+        "Vendor": "microsoft",
+        "CVECount": 411
+      },
+      {
+        "Product": "windows_10_1507",
+        "Vendor": "microsoft",
+        "CVECount": 383
+      },
+      {
+        "Product": "experience_manager",
+        "Vendor": "adobe",
+        "CVECount": 322
+      },
+      {
+        "Product": "windows_server_2008",
+        "Vendor": "microsoft",
+        "CVECount": 306
+      },
+      {
+        "Product": "iphone_os",
+        "Vendor": "apple",
+        "CVECount": 297
+      }
+    ]
+  },
+  "vendor_analysis": {
+    "by_products": [
+      {
+        "Vendor": "qualcomm",
+        "ProductCount": 1656
+      },
+      {
+        "Vendor": "dell",
+        "ProductCount": 1269
+      },
+      {
+        "Vendor": "cisco",
+        "ProductCount": 767
+      },
+      {
+        "Vendor": "sharp",
+        "ProductCount": 638
+      },
+      {
+        "Vendor": "zyxel",
+        "ProductCount": 309
+      },
+      {
+        "Vendor": "mediatek",
+        "ProductCount": 240
+      },
+      {
+        "Vendor": "dlink",
+        "ProductCount": 209
+      },
+      {
+        "Vendor": "idec",
+        "ProductCount": 184
+      },
+      {
+        "Vendor": "amd",
+        "ProductCount": 181
+      },
+      {
+        "Vendor": "siemens",
+        "ProductCount": 168
+      },
+      {
+        "Vendor": "microsoft",
+        "ProductCount": 163
+      },
+      {
+        "Vendor": "juniper",
+        "ProductCount": 150
+      },
+      {
+        "Vendor": "dahuasecurity",
+        "ProductCount": 116
+      },
+      {
+        "Vendor": "omron",
+        "ProductCount": 110
+      },
+      {
+        "Vendor": "netapp",
+        "ProductCount": 99
+      },
+      {
+        "Vendor": "ibm",
+        "ProductCount": 99
+      },
+      {
+        "Vendor": "tenda",
+        "ProductCount": 91
+      },
+      {
+        "Vendor": "phoenixcontact",
+        "ProductCount": 80
+      },
+      {
+        "Vendor": "oracle",
+        "ProductCount": 79
+      },
+      {
+        "Vendor": "sonicwall",
+        "ProductCount": 78
+      }
+    ],
+    "vulnerability_ratio": [
+      {
+        "Vendor": "linux",
+        "CVEs": 2439,
+        "Products": 2,
+        "CVEsPerProduct": 1219.5
+      },
+      {
+        "Vendor": "debian",
+        "CVEs": 259,
+        "Products": 1,
+        "CVEsPerProduct": 259.0
+      },
+      {
+        "Vendor": "gitlab",
+        "CVEs": 113,
+        "Products": 1,
+        "CVEsPerProduct": 113.0
+      },
+      {
+        "Vendor": "fedoraproject",
+        "CVEs": 251,
+        "Products": 3,
+        "CVEsPerProduct": 83.66666666666667
+      },
+      {
+        "Vendor": "dedecms",
+        "CVEs": 70,
+        "Products": 1,
+        "CVEsPerProduct": 70.0
+      },
+      {
+        "Vendor": "idccms",
+        "CVEs": 57,
+        "Products": 1,
+        "CVEsPerProduct": 57.0
+      },
+      {
+        "Vendor": "huawei",
+        "CVEs": 163,
+        "Products": 3,
+        "CVEsPerProduct": 54.333333333333336
+      },
+      {
+        "Vendor": "lunary",
+        "CVEs": 51,
+        "Products": 1,
+        "CVEsPerProduct": 51.0
+      },
+      {
+        "Vendor": "openatom",
+        "CVEs": 50,
+        "Products": 1,
+        "CVEsPerProduct": 50.0
+      },
+      {
+        "Vendor": "mozilla",
+        "CVEs": 190,
+        "Products": 4,
+        "CVEsPerProduct": 47.5
+      },
+      {
+        "Vendor": "ajaysharma",
+        "CVEs": 42,
+        "Products": 1,
+        "CVEsPerProduct": 42.0
+      },
+      {
+        "Vendor": "surajghosh",
+        "CVEs": 38,
+        "Products": 1,
+        "CVEsPerProduct": 38.0
+      },
+      {
+        "Vendor": "hdfgroup",
+        "CVEs": 35,
+        "Products": 1,
+        "CVEsPerProduct": 35.0
+      },
+      {
+        "Vendor": "apple",
+        "CVEs": 819,
+        "Products": 26,
+        "CVEsPerProduct": 31.5
+      },
+      {
+        "Vendor": "seacms",
+        "CVEs": 31,
+        "Products": 1,
+        "CVEsPerProduct": 31.0
+      },
+      {
+        "Vendor": "esafenet",
+        "CVEs": 31,
+        "Products": 1,
+        "CVEsPerProduct": 31.0
+      },
+      {
+        "Vendor": "gstreamer_project",
+        "CVEs": 31,
+        "Products": 1,
+        "CVEsPerProduct": 31.0
+      },
+      {
+        "Vendor": "openlinksw",
+        "CVEs": 30,
+        "Products": 1,
+        "CVEsPerProduct": 30.0
+      },
+      {
+        "Vendor": "irfanview",
+        "CVEs": 88,
+        "Products": 3,
+        "CVEsPerProduct": 29.333333333333332
+      },
+      {
+        "Vendor": "leevio",
+        "CVEs": 29,
+        "Products": 1,
+        "CVEsPerProduct": 29.0
+      }
+    ]
+  }
+}

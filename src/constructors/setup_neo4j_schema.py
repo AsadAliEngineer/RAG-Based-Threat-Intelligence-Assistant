@@ -45,27 +45,27 @@ def setup_schema(driver):
         for constraint in constraints:
             try:
                 session.run(constraint)
-                print(f"✓ {constraint}")
+                print(f"OK {constraint}")
             except Exception as e:
-                print(f"⚠ {constraint} - {e}")
+                print(f"WARNING {constraint} - {e}")
         
         # Execute indexes
         print("\nCreating indexes...")
         for index in indexes:
             try:
                 session.run(index)
-                print(f"✓ {index}")
+                print(f"OK {index}")
             except Exception as e:
-                print(f"⚠ {index} - {e}")
+                print(f"WARNING {index} - {e}")
         
         # Execute full-text indexes
         print("\nCreating full-text indexes...")
         for index in fulltext_indexes:
             try:
                 session.run(index)
-                print(f"✓ {index}")
+                print(f"OK {index}")
             except Exception as e:
-                print(f"⚠ {index} - {e}")
+                print(f"WARNING {index} - {e}")
         
         print("\nSchema setup complete!")
 
@@ -76,10 +76,10 @@ def test_connection(driver):
             result = session.run("RETURN 1 as test")
             record = result.single()
             if record and record["test"] == 1:
-                print("✓ Neo4j connection successful!")
+                print("OK Neo4j connection successful!")
                 return True
     except Exception as e:
-        print(f"✗ Neo4j connection failed: {e}")
+        print(f"ERROR Neo4j connection failed: {e}")
         return False
 
 def main():
@@ -98,7 +98,7 @@ def main():
     setup_schema(driver)
     
     driver.close()
-    print("\n🎉 Neo4j schema setup complete!")
+    print("\nSUCCESS Neo4j schema setup complete!")
     print("\nYou can now:")
     print("1. Open Neo4j Browser at: http://localhost:7474")
     print("2. Login with: neo4j/password")

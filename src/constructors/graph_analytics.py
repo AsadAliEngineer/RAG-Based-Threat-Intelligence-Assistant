@@ -28,7 +28,7 @@ class GraphAnalytics:
     
     def get_basic_stats(self):
         """Get basic statistics about the knowledge graph"""
-        print("📊 Basic Knowledge Graph Statistics")
+        print("Basic Knowledge Graph Statistics")
         print("=" * 50)
         
         # Node counts
@@ -38,7 +38,7 @@ class GraphAnalytics:
             ORDER BY Count DESC
         """)
         
-        print("\n📈 Node Counts:")
+        print("\nNode Counts:")
         for stat in node_stats:
             node_type = stat['NodeType'][0] if stat['NodeType'] else 'Unknown'
             print(f"  {node_type}: {stat['Count']:,}")
@@ -50,13 +50,13 @@ class GraphAnalytics:
             ORDER BY Count DESC
         """)
         
-        print("\n🔗 Relationship Counts:")
+        print("\nRelationship Counts:")
         for stat in rel_stats:
             print(f"  {stat['RelationshipType']}: {stat['Count']:,}")
     
     def get_cve_analysis(self):
         """Analyze CVE data"""
-        print("\n🔍 CVE Analysis")
+        print("\nCVE Analysis")
         print("=" * 50)
         
         # CVE distribution by year
@@ -67,7 +67,7 @@ class GraphAnalytics:
             ORDER BY year DESC
         """)
         
-        print("\n📅 CVE Distribution by Year:")
+        print("\nCVE Distribution by Year:")
         for stat in cve_by_year:
             print(f"  {stat['Year']}: {stat['CVECount']:,} CVEs")
         
@@ -79,7 +79,7 @@ class GraphAnalytics:
             ORDER BY CVECount DESC
         """)
         
-        print("\n⚠️  CVE Distribution by Severity:")
+        print("\nCVE Distribution by Severity:")
         for stat in cve_by_severity:
             print(f"  {stat['Severity']}: {stat['CVECount']:,} CVEs")
         
@@ -91,7 +91,7 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n🏢 Top Vendors by CVE Count:")
+        print("\nTop Vendors by CVE Count:")
         for i, vendor in enumerate(top_vendors, 1):
             print(f"  {i}. {vendor['Vendor']}: {vendor['CVECount']:,} CVEs")
         
@@ -103,7 +103,7 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n📦 Top Products by CVE Count:")
+        print("\nTop Products by CVE Count:")
         for i, product in enumerate(top_products, 1):
             print(f"  {i}. {product['Product']} ({product['Vendor']}): {product['CVECount']:,} CVEs")
         
@@ -115,13 +115,13 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n🔓 Most Common Weaknesses (CWE):")
+        print("\nMost Common Weaknesses (CWE):")
         for i, cwe in enumerate(top_cwes, 1):
             print(f"  {i}. {cwe['CWE']}: {cwe['CVECount']:,} CVEs")
     
     def get_vendor_ecosystem_analysis(self):
         """Analyze vendor product ecosystems"""
-        print("\n🏭 Vendor Ecosystem Analysis")
+        print("\nVendor Ecosystem Analysis")
         print("=" * 50)
         
         # Vendors with most products
@@ -132,7 +132,7 @@ class GraphAnalytics:
             LIMIT 15
         """)
         
-        print("\n📊 Vendors by Product Count:")
+        print("\nVendors by Product Count:")
         for i, vendor in enumerate(vendors_by_products, 1):
             print(f"  {i}. {vendor['Vendor']}: {vendor['ProductCount']:,} products")
         
@@ -147,14 +147,14 @@ class GraphAnalytics:
             LIMIT 15
         """)
         
-        print("\n⚠️  Most Vulnerable Vendors (CVEs per Product):")
+        print("\nMost Vulnerable Vendors (CVEs per Product):")
         for i, vendor in enumerate(vulnerable_vendors, 1):
             print(f"  {i}. {vendor['Vendor']}: {vendor['CVEsPerProduct']:.2f} CVEs/product "
                   f"({vendor['CVEs']:,} CVEs, {vendor['Products']:,} products)")
     
     def get_attack_pattern_analysis(self):
         """Analyze attack patterns and weaknesses"""
-        print("\n🎯 Attack Pattern Analysis")
+        print("\nAttack Pattern Analysis")
         print("=" * 50)
         
         # Most common attack patterns
@@ -165,7 +165,7 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n⚔️  Most Common Attack Patterns (CAPEC):")
+        print("\nMost Common Attack Patterns (CAPEC):")
         for i, capec in enumerate(top_capecs, 1):
             print(f"  {i}. {capec['CAPEC']}: {capec['CVECount']:,} CVEs")
         
@@ -178,13 +178,13 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n🔗 Top CWE-CAPEC Combinations:")
+        print("\nTop CWE-CAPEC Combinations:")
         for i, rel in enumerate(cwe_capec_relationships, 1):
             print(f"  {i}. {rel['CWE']} + {rel['CAPEC']}: {rel['CVECount']:,} CVEs")
     
     def get_version_analysis(self):
         """Analyze version information"""
-        print("\n🔢 Version Analysis")
+        print("\nVersion Analysis")
         print("=" * 50)
         
         # Products with version information
@@ -201,7 +201,7 @@ class GraphAnalytics:
         if products_with_versions and total_products:
             version_coverage = (products_with_versions[0]['ProductsWithVersions'] / 
                               total_products[0]['TotalProducts']) * 100
-            print(f"\n📊 Version Coverage: {version_coverage:.1f}% of products have version information")
+            print(f"\nVersion Coverage: {version_coverage:.1f}% of products have version information")
         
         # Products with multiple versions
         multi_version_products = self.run_query("""
@@ -213,13 +213,13 @@ class GraphAnalytics:
             LIMIT 10
         """)
         
-        print("\n🔄 Products with Multiple Versions:")
+        print("\nProducts with Multiple Versions:")
         for i, product in enumerate(multi_version_products, 1):
             print(f"  {i}. {product['Product']} ({product['Vendor']}): {product['versionCount']} versions")
     
     def get_data_quality_report(self):
         """Generate data quality report"""
-        print("\n🔍 Data Quality Report")
+        print("\nData Quality Report")
         print("=" * 50)
         
         # Products without vendors
@@ -230,7 +230,7 @@ class GraphAnalytics:
         """)
         
         if products_without_vendors:
-            print(f"\n⚠️  Products without vendor relationships: {products_without_vendors[0]['Count']:,}")
+            print(f"\nWARNING: Products without vendor relationships: {products_without_vendors[0]['Count']:,}")
         
         # CVEs without products
         cves_without_products = self.run_query("""
@@ -240,7 +240,7 @@ class GraphAnalytics:
         """)
         
         if cves_without_products:
-            print(f"⚠️  CVEs without product relationships: {cves_without_products[0]['Count']:,}")
+            print(f"WARNING: CVEs without product relationships: {cves_without_products[0]['Count']:,}")
         
         # CVEs without CVSS scores
         cves_without_cvss = self.run_query("""
@@ -250,7 +250,7 @@ class GraphAnalytics:
         """)
         
         if cves_without_cvss:
-            print(f"⚠️  CVEs without CVSS scores: {cves_without_cvss[0]['Count']:,}")
+            print(f"WARNING: CVEs without CVSS scores: {cves_without_cvss[0]['Count']:,}")
         
         # Duplicate products
         duplicate_products = self.run_query("""
@@ -261,11 +261,11 @@ class GraphAnalytics:
         """)
         
         if duplicate_products:
-            print(f"⚠️  Products with potential duplicates: {duplicate_products[0]['Count']:,}")
+            print(f"WARNING: Products with potential duplicates: {duplicate_products[0]['Count']:,}")
     
     def export_analytics_to_json(self, filename="graph_analytics.json"):
         """Export analytics data to JSON file"""
-        print(f"\n💾 Exporting analytics to {filename}")
+        print(f"\nExporting analytics to {filename}")
         
         analytics_data = {
             "timestamp": datetime.now().isoformat(),
@@ -287,11 +287,11 @@ class GraphAnalytics:
         with open(filename, 'w') as f:
             json.dump(analytics_data, f, indent=2)
         
-        print(f"✅ Analytics exported to {filename}")
+        print(f"SUCCESS: Analytics exported to {filename}")
     
     def run_full_analysis(self):
         """Run complete analysis"""
-        print("🚀 Starting Enhanced Knowledge Graph Analytics")
+        print("Starting Enhanced Knowledge Graph Analytics")
         print("=" * 60)
         
         try:
@@ -303,10 +303,10 @@ class GraphAnalytics:
             self.get_data_quality_report()
             self.export_analytics_to_json()
             
-            print("\n🎉 Analysis complete!")
+            print("\nSUCCESS: Analysis complete!")
             
         except Exception as e:
-            print(f"❌ Error during analysis: {e}")
+            print(f"ERROR: Error during analysis: {e}")
         finally:
             self.close()
 
