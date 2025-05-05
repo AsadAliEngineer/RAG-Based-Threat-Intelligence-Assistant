@@ -4,7 +4,10 @@ This directory contains the core components for building and managing the CVE kn
 
 ## 📊 Current Knowledge Graph Statistics
 
-Note that the statistics are for 2024 CVEs only. Feel free to add more data.
+Note that this knowledge graph is currently built using **CVE data from 2024 only**, sourced from:
+- **CVE Data File**: `data/knowledge_base/enhanced_documents_cve_2024.json` (149MB)
+- **CPE Data File**: `data/knowledge_base/cpe_parsing_results_full.json` (29MB)
+
 
 ### **Node Counts**
 - **CVE**: 38,995 (with CVSS scores, attack vectors, descriptions)
@@ -27,12 +30,6 @@ Note that the statistics are for 2024 CVEs only. Feel free to add more data.
 - **Most Common Weakness**: CWE-79 (Cross-site Scripting)
 - **Attack Patterns**: CAPEC-592, CAPEC-63, CAPEC-209 are most prevalent
 
-## 📅 Data Scope & Expansion
-
-### **Current Dataset**
-This knowledge graph is currently built using **CVE data from 2024 only**, sourced from:
-- **CVE Data File**: `data/knowledge_base/enhanced_documents_cve_2024.json` (149MB)
-- **CPE Data File**: `data/knowledge_base/cpe_parsing_results_full.json` (29MB)
 
 ## 🏗️ Architecture Overview
 
