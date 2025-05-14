@@ -1,6 +1,10 @@
 # data_collection/get_data.py
-
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
 from config import Config
+import logging
+import requests
 import logging
 import requests
 import re
