@@ -411,25 +411,18 @@ async def search_cves(request: QueryRequest):
             current_year = datetime.now().year
             search_years = [str(year) for year in range(current_year - 3, current_year + 1)]
         
-        # Perform enhanced search with performance optimization
+        # Perform search using the correct CVERAGSystem method
         search_timeout = 30.0 if tech_analysis['priority_level'] >= 4 else 20.0
         
-        if hasattr(rag_system, 'search_cves_by_year'):
-            search_results = await asyncio.wait_for(
-                asyncio.to_thread(
-                    rag_system.search_cves_by_year,
-                    request.query,
-                    search_years,
-                    request.top_k
-                ),
-                timeout=search_timeout
-            )
-        else:
-            # Fallback to basic search
-            search_results = await asyncio.wait_for(
-                asyncio.to_thread(rag_system.search, request.query, request.top_k),
-                timeout=search_timeout
-            )
+        # Use the search_cves method from CVERAGSystem
+        search_results = await asyncio.wait_for(
+            asyncio.to_thread(
+                rag_system.search_cves,
+                request.query,
+                request.top_k
+            ),
+            timeout=search_timeout
+        )
         
         # Convert to response format
         pydantic_results = []
@@ -497,8 +490,8 @@ async def health_check():
     """Enhanced health check with technology detection capabilities"""
     try:
         rag_system = get_rag_system()
-        if hasattr(rag_system, 'get_stats'):
-            stats = rag_system.get_stats()
+        if hasattr(rag_system, 'get_collection_stats'):
+            stats = rag_system.get_collection_stats()
         else:
             stats = {"status": "unknown"}
 

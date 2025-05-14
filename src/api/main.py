@@ -42,26 +42,16 @@ async def startup():
     
     # Initialize app_state with required components
     try:
-        # Initialize Enhanced RAG System
-        from src.generators.enhanced_rag_system import EnhancedRAGSystem
+        # Initialize the correct RAG System (the one that works with direct commands)
+        from src.generators.rag_system import CVERAGSystem
         
-        config = {
-            'base_path': 'data/knowledge_base',
-            'start_year': 2002,
-            'end_year': 2025,
-            'max_cache_years': 3,
-            'use_embeddings': False,
-            'cache_ttl': 7200
-        }
-        
-        logger.info("Initializing Enhanced RAG System...")
-        rag_system = EnhancedRAGSystem(config)
+        logger.info("Initializing CVE RAG System...")
+        rag_system = CVERAGSystem()
         app_state['rag_system'] = rag_system
         
         # Get system stats
-        stats = rag_system.get_stats()
-        logger.info(f"RAG System ready: {stats.get('total_cves_indexed', 0):,} CVEs indexed")
-        logger.info(f"Years available: {stats.get('year_range', 'N/A')}")
+        stats = rag_system.get_collection_stats()
+        logger.info(f"RAG System ready: {stats.get('total_documents', 0):,} documents indexed")
         
         # Initialize other components (optional - will be handled gracefully if not available)
         try:
