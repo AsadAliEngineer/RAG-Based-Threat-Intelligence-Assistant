@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """
-Process All CVEs
-Processes the massive CVE dataset and creates a comprehensive knowledge base
+Processes CVE dataset and creates a comprehensive knowledge base
 """
 
 import json
