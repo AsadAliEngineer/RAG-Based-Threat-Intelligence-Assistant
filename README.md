@@ -72,6 +72,7 @@ python src/processors/process_all_cves.py
 
 # Parse CPEs and extract products/vendors
 python src/constructors/run_cpe_extraction.py
+```
 
 ### **Construction of KG and RAG System**
 
