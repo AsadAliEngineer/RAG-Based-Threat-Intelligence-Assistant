@@ -49,6 +49,9 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
 # Install Python dependencies
 pip install -r requirements.txt
 
+# Optional: if you have NVIDIA GPU and want CUDA-specific PyTorch wheels,
+# install torch/torchvision/torchaudio separately from the official PyTorch index.
+
 # Install Ollama from https://ollama.ai
 # Then pull required models:
 ollama pull llama3.1:8b
@@ -142,7 +145,7 @@ curl -X POST http://localhost:8000/api/v1/search \
 
 ## **Access Interfaces**
 -  Gradio UI: http://localhost:7860
--  API Documentatio*: http://localhost:8000/docs  
+-  API Documentation: http://localhost:8000/docs  
 -  API Health Check: http://localhost:8000/api/v1/health
 
 ##  Architecture Overview

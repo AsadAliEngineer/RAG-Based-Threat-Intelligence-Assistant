@@ -14,7 +14,7 @@ class Config:
         self.project_root = Path(__file__).resolve().parent
         self.base_data_dir = self.project_root / "data"
         self.knowledge_base_dir = self.base_data_dir / "knowledge_base"
-        self.enhanced_documents_path = self.knowledge_base_dir / "enhanced_documents_cve_2024.json"
+        self.enhanced_documents_path = self._resolve_enhanced_documents_path()
         self.cti_data_dir = self.base_data_dir / "CTI" / "raw"
         self.cti_docs_dir = self.base_data_dir / "CTI" / "docs"
         self.system_data_dir = self.base_data_dir / "system"
@@ -49,3 +49,15 @@ class Config:
         
         # Device Configuration
         self.device = os.getenv("DEVICE", "cpu")  # cpu, cuda, mps 
+
+    def _resolve_enhanced_documents_path(self) -> Path:
+        """Pick the latest available enhanced CVE document file, with a stable fallback."""
+        explicit_path = os.getenv("ENHANCED_DOCUMENTS_PATH")
+        if explicit_path:
+            return Path(explicit_path)
+
+        candidates = sorted(self.knowledge_base_dir.glob("enhanced_documents_cve_*.json"))
+        if candidates:
+            return candidates[-1]
+
+        return self.knowledge_base_dir / "enhanced_documents_cve_2024.json"
