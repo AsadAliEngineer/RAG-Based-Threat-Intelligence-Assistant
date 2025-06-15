@@ -20,7 +20,7 @@
 
 This project combines a comprehensive knowledge graph for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. We automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data.
 
-## 📊 Current Statistics (Latest)
+## Current Statistics (Latest)
 
 ### **Knowledge Graph Coverage (1999-2025)**
 - **190,310 CVEs** with rich metadata (CVSS, affected products, CWE, CAPEC, MITRE mappings)
@@ -37,14 +37,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
 - **LOW**: 2,671 CVEs
 - **UNKNOWN**: 37,634 CVEs
 
-### **Top Vendors by Vulnerability Count**
-1. **HP**: 14,569 vulnerabilities
-2. **Intel**: 10,014 vulnerabilities
-3. **Cisco**: 5,733 vulnerabilities
-4. **Lenovo**: 4,123 vulnerabilities
-5. **Siemens**: 4,083 vulnerabilities
-
-## 🚀 Quick Start
+## Quick Start
 
 ### **Option 1: Neo4j-Based Workflow (Full Graph Database)**
 
@@ -84,7 +77,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
    python -m src.generators.rag_system --search "SQL injection vulnerabilities"
    ```
 
-### **Option 2: Non-Neo4j Workflow (JSON-Based, Recommended for Development)**
+### **Option 2: Non-Neo4j Workflow**
 
 1. **Download All CVE Data (1999-2025)**
    ```bash
@@ -110,7 +103,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
    python src/generators/export_kg_for_rag_without_neo4j.py --full
    ```
 
-4. **Build RAG System (Development Phase)**
+4. **Build RAG System**
    ```bash
    # Install RAG dependencies
    pip install fastapi uvicorn chromadb sentence-transformers ollama pydantic
@@ -122,7 +115,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
    # python src/rag_system/api_server.py
    ```
 
-## 🏗️ Architecture Overview
+## Architecture Overview
 
 ### **Data Pipeline**
 ```
@@ -147,32 +140,6 @@ Relationships: CVE→Product, CVE→CWE, CVE→CAPEC, CVE→MITRE, Product→Ven
                        └─────────────────┘    └─────────────────┘
 ```
 
-## 📁 Project Structure
-
-```
-src/
-├── collectors/          # Data collection from various sources
-├── processors/          # CVE processing and enrichment
-├── constructors/        # Knowledge graph construction
-│   ├── kg_builder_without_neo4j.py    # JSON-based KG builder
-│   ├── enhanced_neo4j_loader.py       # Neo4j-based KG loader
-│   └── run_cpe_extraction.py          # CPE parsing
-├── generators/          # RAG system generation
-│   ├── export_kg_for_rag_without_neo4j.py  # JSON-based export
-│   └── export_kg_for_rag.py                 # Neo4j-based export
-└── rag_system/          # RAG system implementation (in progress)
-
-data/
-├── CVE/                 # Raw CVE data from NVD
-├── CTI/                 # Threat intelligence data
-├── knowledge_base/      # Processed data and exports
-│   ├── enhanced_documents_cve_*.json  # Processed CVEs by year
-│   ├── cpe_parsing_results_full.json  # Product/vendor data
-│   ├── knowledge_graph/               # JSON-based KG
-│   └── rag_exports/                   # RAG-ready data
-└── knowledge_graph/     # Neo4j-based KG (if using Neo4j)
-```
-
 ## 🧪 Testing
 
 ```bash
@@ -185,34 +152,6 @@ pytest
 - **RAG config**: `src/generators/rag_config.py`
 - **Example Cypher queries**: `src/constructors/neo4j_queries.md`
 
-## 📚 Documentation
-
-- **Constructors README**: `src/constructors/README.md` - Detailed knowledge graph documentation
-- **For new data types or advanced usage**: See in-code docstrings and comments
-
-## 🚀 Next Steps (Development Phase)
-
-### **RAG System Implementation**
-1. **Vector Database Setup** (ChromaDB)
-2. **Embedding Generation** (BGE-Large-EN)
-3. **LLM Integration** (Ollama + Llama 3.1)
-4. **FastAPI Service** (Query Interface)
-5. **Hybrid Search Engine** (Vector + Keyword + Graph)
-
-### **Technology Stack (Development)**
-- **Vector DB**: ChromaDB (local, free)
-- **Embeddings**: BGE-Large-EN (open source, excellent quality)
-- **LLM**: Llama 3.1 8B via Ollama (open source, good performance)
-- **API Framework**: FastAPI (modern, fast, async)
-- **Data Processing**: Pydantic (type safety)
-
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests
-5. Submit a pull request
 
 ## 📄 License
 
