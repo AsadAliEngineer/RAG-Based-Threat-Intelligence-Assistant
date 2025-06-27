@@ -26,7 +26,6 @@ def main():
         ("Download KEV and CSAF", base_dir / "download_cisa_data.py", "download"),
         ("Download CWE, CAPEC, ExploitDB", base_dir / "get_data.py", "download"),
         ("Convert raw CTI to docs", base_dir / "convert_cti_raw_to_docs.py", "convert"),
-        # ("Enrich and correlate data", base_dir / "enrich_data.py", "enrich"),  # Removed enrichment step
     ]
 
     parser = argparse.ArgumentParser(description="Orchestrate threat intelligence data collection and preparation.")
