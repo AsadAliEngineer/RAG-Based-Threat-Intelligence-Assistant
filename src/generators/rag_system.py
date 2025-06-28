@@ -378,7 +378,7 @@ class CVERAGSystem:
 
 def main():
     """Demo the RAG system"""
-    print("🚀 CVE RAG System Demo")
+    print(" CVE RAG System Demo")
     print("=" * 50)
     
     # Initialize RAG system
@@ -396,7 +396,7 @@ def main():
     ]
     
     for query in queries:
-        print(f"\n🔍 Searching for: '{query}'")
+        print(f"\n Searching for: '{query}'")
         results = rag_system.search_cves(query, n_results=3)
         
         for i, result in enumerate(results, 1):
@@ -460,7 +460,7 @@ def main():
             print(f"     Distance: {result['distance']:.4f}")
     
     # Demo vulnerability summary
-    print(f"\n📊 Vulnerability Summary for 'SQL injection'")
+    print(f"\n Vulnerability Summary for 'SQL injection'")
     summary = rag_system.get_vulnerability_summary("SQL injection")
     print(f"  Total results: {summary['total_results']}")
     print(f"  Severity distribution: {summary['severity_distribution']}")
