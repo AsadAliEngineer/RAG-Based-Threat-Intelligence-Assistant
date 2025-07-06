@@ -44,7 +44,7 @@ This project combines a comprehensive knowledge graph for structured vulnerabili
 4. **Lenovo**: 4,123 vulnerabilities
 5. **Siemens**: 4,083 vulnerabilities
 
-# Quick Start
+# Implementation Guide
 
 ## **Option 1: Start RAG System (Recommended)**
 
