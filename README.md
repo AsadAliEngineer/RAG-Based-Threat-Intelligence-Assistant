@@ -2,7 +2,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <a href="https://github.com/Yuni0217/CVE-KGRAG">
+  <a href="https://github.com/Yuning-J/CVE-KGRAG">
   </a>
   <br />
 
@@ -20,6 +20,10 @@
 
 This project combines a comprehensive knowledge graph for structured vulnerability data and relationships with an enhanced Retrieval-Augmented Generation (RAG) system for semantic search. We automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data.
 
+## Integration
+
+- `CVE-KGRAG` is used as the threat-intelligence backend for simulation projects such as `APTArena`/`CyGATE`.
+- Typical outputs consumed by simulation pipelines include exploitability signals, tactic mappings, and vulnerability relationship context.
 
 ## Current Statistics (Latest)
 
@@ -197,4 +201,3 @@ Relationships: CVE→Product, CVE→CWE, CVE→CAPEC, CVE→MITRE, Product→Ven
 ## More Details
 
 You can find more details on this work in the following paper: [CyGATE: Game-Theoretic Cyber Attack-Defense Engine for Patch Strategy Optimization](http://arxiv.org/abs/2508.00478) 
-
