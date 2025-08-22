@@ -7,6 +7,7 @@ from typing import List, Dict, Any, Optional
 from enum import Enum
 
 class QueryType(str, Enum):
+    SEARCH = "search"
     CVE_LOOKUP = "cve_lookup"
     VENDOR_ANALYSIS = "vendor_analysis"
     SIMILARITY_SEARCH = "similarity_search"
