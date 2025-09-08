@@ -4,6 +4,11 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
 
 ## 🚀 Quick Start
 
+### Prerequisites
+- Python 3.8+
+- Docker Desktop (for Neo4j)
+- 8GB+ RAM recommended
+
 ### Installation
 
 1. **Clone and setup**
@@ -16,6 +21,7 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    ```
 
 2. **Start Neo4j Database**
+   > **First time?** Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and pull the [Neo4j image](https://hub.docker.com/_/neo4j) with `docker pull neo4j:latest` if you haven't already.
    ```bash
    # IMPORTANT: Set your own secure Neo4j password!
    export NEO4J_PASSWORD=<your_password>
@@ -27,20 +33,41 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
      neo4j:latest
    ```
 
-3. **Build Knowledge Graph**
+3. **Collect, Correlate, and Process Data**
    ```bash
-   cd src/constructors
+   cd src/collectors
+   python main_collector.py
+   # Downloads and preprocesses CVE, CPE, CWE, CAPEC, and threat intelligence data.
+   # Produces raw and intermediate files in data/knowledge_base and data/CVE.
+   
+   cd ../processors
+   python process_all_cves.py
+   # Correlates and enriches the collected data, producing processed CVE and CPE documents for graph construction.
+   ```
+
+4. **Parse CPEs and Extract Products/Vendors**
+   ```bash
+   cd ../constructors
+   python run_cpe_extraction.py
+   # Parses CPE strings from processed CVE data, extracts and normalizes products and vendors,
+   # and outputs structured product/vendor data for graph construction.
+   ```
+   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
+
+5. **Build Knowledge Graph**
+   ```bash
+   cd ../constructors
    python setup_neo4j_schema.py
    python enhanced_neo4j_loader.py --stats
    ```
 
-4. **Test RAG System**
+6. **Test RAG System**
    ```bash
    cd ../generators
    python rag_system.py
    ```
 
-5. **Explore the Graph**
+7. **Explore the Graph**
    - **Neo4j Browser**: need to login
    - **Analytics**: `python graph_analytics.py`
    - **Query Examples**: See `neo4j_queries.md`
