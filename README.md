@@ -18,7 +18,7 @@
   </p>
 </p>
 
-This project combines a comprehensive knowledge graph for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. We automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data. Also integrated LLAMA model for performance optimization.
+This project combines a comprehensive knowledge graph for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. We automate the process of curation, processing and correlation of CVE, CPE, CWE, CAPEC, MITRE ATT&CK, ExploitDB, CISA and other threat intelligence data. Also integrated Llama model for performance optimization.
 
 ## Current Statistics (Latest)
 
