@@ -83,7 +83,7 @@ class HealthResponse(BaseModel):
 
 class YearSearchRequest(BaseModel):
     query: str
-    years: List[str] = ['2021', '2022', '2023', '2024']  # Default to recent years
+    years: List[str] = ['2021', '2022', '2023', '2024','2025']  # Default to recent years
     n_results: int = 10
     severity_filter: Optional[str] = None
     vendor_filter: Optional[str] = None 
