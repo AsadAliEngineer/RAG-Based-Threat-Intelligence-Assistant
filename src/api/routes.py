@@ -1,117 +1,152 @@
-# src/api/routes.py
-"""
-SIMPLIFIED and FIXED FastAPI routes for the Enhanced RAG System
-This version removes complex technology detection and focuses on the working CVERAGSystem methods
-"""
+# src/api/optimized_routes.py
 
+from fastapi import APIRouter, HTTPException, BackgroundTasks
+from typing import Dict, Any, List, Optional
 import asyncio
-import logging
 import time
+import logging
+from datetime import datetime
+import re
 import traceback
-from typing import List, Dict, Any, Optional
 
-from fastapi import APIRouter, HTTPException, Query
-from fastapi.responses import StreamingResponse
-
-from .models import (
-    QueryRequest, QueryResponse, SearchResult, QueryType,
-    SummaryRequest, SummaryResponse, HealthResponse
-)
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Global application state
-app_state: Dict[str, Any] = {}
+# Global app state (will be set by main.py)
+app_state = {}
 
-router = APIRouter(prefix="/api/v1")
+router = APIRouter()
+
+# Import models with fallback
+try:
+    from .models import QueryRequest, QueryResponse, SearchResult, QueryType
+except ImportError:
+    from pydantic import BaseModel
+    from enum import Enum
+
+
+    class QueryType(str, Enum):
+        SEARCH = "search"
+        CVE_LOOKUP = "cve_lookup"
+        GENERAL = "general"
+
+
+    class QueryRequest(BaseModel):
+        query: str
+        top_k: int = 10
+        years: Optional[List[str]] = None
+        max_context_docs: int = 5
+        use_large_model: bool = False
+        stream: bool = False
+        severity_filter: Optional[str] = None
+        vendor_filter: Optional[str] = None
+
+
+    class SearchResult(BaseModel):
+        id: str
+        text: str
+        metadata: Dict[str, Any]
+        score: float
+        distance: float
+
+
+    class QueryResponse(BaseModel):
+        query: str
+        response: str
+        search_results: List[SearchResult]
+        query_type: QueryType
+        processing_time: float
+        model_used: str
 
 
 def get_rag_system():
-    """Get the RAG system from app state"""
-    rag_system = app_state.get('rag_system')
-    if not rag_system:
+    """Get RAG system from app state"""
+    if 'rag_system' not in app_state:
         raise HTTPException(status_code=503, detail="RAG system not initialized")
-    return rag_system
+    return app_state['rag_system']
 
 
 def get_llm_client():
-    """Get the LLM client from app state (optional)"""
-    return app_state.get('llm_client')
+    """Get LLM client from app state (optional)"""
+    return app_state.get('llm_client', None)
+
+
+def get_enhanced_processor():
+    """Get enhanced processor from app state (optional)"""
+    return app_state.get('enhanced_processor', None)
 
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Fast health check endpoint"""
     try:
+        # Quick health check with timeout
         rag_system = get_rag_system()
-        stats = rag_system.get_collection_stats()
 
-        # Check GPU availability
-        import torch
-        gpu_available = torch.cuda.is_available()
-        gpu_name = torch.cuda.get_device_name(0) if gpu_available else None
-
-        return HealthResponse(
-            status="healthy",
-            gpu_available=gpu_available,
-            gpu_name=gpu_name,
-            vector_db_documents=stats.get("total_documents", 0),
-            model_loaded=True
+        # Get basic stats quickly
+        stats = await asyncio.wait_for(
+            asyncio.to_thread(rag_system.get_collection_stats),
+            timeout=5.0  # 5 second timeout for health check
         )
+
+        llm_client = get_llm_client()
+        llm_status = llm_client.available if llm_client else False
+
+        return {
+            "status": "healthy",
+            "documents": stats.get("total_documents", 0),
+            "llm_available": llm_status,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except asyncio.TimeoutError:
+        return {
+            "status": "slow",
+            "message": "System responding slowly",
+            "timestamp": datetime.now().isoformat()
+        }
     except Exception as e:
         logger.error(f"Health check failed: {e}")
-        return HealthResponse(
-            status="unhealthy",
-            gpu_available=False,
-            vector_db_documents=0,
-            model_loaded=False
-        )
+        raise HTTPException(status_code=503, detail=f"System unhealthy: {str(e)}")
 
 
 @router.post("/search")
-async def search_cves(request: QueryRequest):
-    """
-    SIMPLIFIED Search endpoint - uses only the working CVERAGSystem.search_cves method
-    """
-    try:
-        start_time = time.time()
+async def optimized_search(request: QueryRequest):
+    """Optimized search endpoint with better performance"""
+    start_time = time.time()
 
+    try:
+        # Validate input
         if not request.query or len(request.query.strip()) == 0:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
 
+        # Limit parameters for performance
+        top_k = min(request.top_k, 20)  # Reduced from 50
+        query = request.query.strip()[:500]  # Limit query length
+
         rag_system = get_rag_system()
 
-        # Simple search timeout (reduced from 20-30s to 10s)
-        search_timeout = 10.0
+        # Determine timeout based on query complexity
+        search_timeout = 15.0  # Default timeout
+        if len(query) > 100 or top_k > 10:
+            search_timeout = 20.0
 
-        logger.info(f"Starting search for: {request.query[:50]}...")
-
-        # Use the working search_cves method with proper parameter mapping
+        # Execute search with timeout
         try:
             search_results = await asyncio.wait_for(
-                asyncio.to_thread(
-                    rag_system.search_cves,
-                    request.query,
-                    request.top_k,  # n_results parameter
-                    getattr(request, 'severity_filter', None),
-                    getattr(request, 'vendor_filter', None)
-                ),
+                asyncio.to_thread(rag_system.search_cves, query, top_k),
                 timeout=search_timeout
             )
         except asyncio.TimeoutError:
-            logger.error(f"Search timeout ({search_timeout}s) for query: {request.query[:50]}...")
-            raise HTTPException(status_code=408,
-                                detail=f"Search timed out after {search_timeout}s. Please try a more specific query.")
-        except Exception as e:
-            logger.error(f"Search error: {e}")
-            raise HTTPException(status_code=500, detail=f"Search failed: {str(e)}")
+            logger.warning(f"Search timeout for query: {query[:50]}...")
+            raise HTTPException(
+                status_code=408,
+                detail=f"Search timed out after {search_timeout}s. Try a more specific query."
+            )
 
-        # Convert to response format
-        pydantic_results = []
+        # Convert results
+        formatted_results = []
         for result in search_results:
-            pydantic_results.append(SearchResult(
+            formatted_results.append(SearchResult(
                 id=result.get('id', ''),
                 text=result.get('text', result.get('content', '')),
                 metadata=result.get('metadata', {}),
@@ -120,196 +155,236 @@ async def search_cves(request: QueryRequest):
             ))
 
         processing_time = time.time() - start_time
-        logger.info(f"Search completed in {processing_time:.2f}s, found {len(pydantic_results)} results")
 
-        return pydantic_results
+        return {
+            "results": formatted_results,
+            "query": query,
+            "total_results": len(formatted_results),
+            "processing_time": processing_time,
+            "status": "success"
+        }
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Search processing failed: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Search processing failed: {str(e)}")
+        processing_time = time.time() - start_time
+        logger.error(f"Search failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Search failed after {processing_time:.2f}s: {str(e)}"
+        )
 
 
 @router.post("/query")
-async def query_cves(request: QueryRequest):
-    """
-    SIMPLIFIED Query endpoint with optional LLM response generation
-    """
-    try:
-        start_time = time.time()
+async def optimized_query(request: QueryRequest):
+    """Optimized query endpoint with LLM integration"""
+    start_time = time.time()
 
+    try:
+        # Validate input
         if not request.query or len(request.query.strip()) == 0:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
 
+        # Limit parameters
+        top_k = min(request.top_k, 15)
+        query = request.query.strip()[:500]
+
+        # Get components
         rag_system = get_rag_system()
-        llm_client = get_llm_client()
+        enhanced_processor = get_enhanced_processor()
 
-        # Limit top_k for performance
-        adjusted_top_k = min(request.top_k, 20)
+        # Use enhanced processor if available, otherwise fallback
+        if enhanced_processor:
+            try:
+                # Enhanced processing with timeout
+                result = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        enhanced_processor.process_query,
+                        query,
+                        top_k,
+                        request.years,
+                        True  # use_llm
+                    ),
+                    timeout=25.0  # Longer timeout for LLM processing
+                )
 
-        logger.info(f"Starting query for: {request.query[:50]}...")
+                # Convert search results
+                formatted_results = []
+                for search_result in result.get('search_results', []):
+                    formatted_results.append(SearchResult(
+                        id=search_result.get('id', ''),
+                        text=search_result.get('text', search_result.get('content', '')),
+                        metadata=search_result.get('metadata', {}),
+                        score=search_result.get('score', 0.0),
+                        distance=search_result.get('distance', 1.0)
+                    ))
 
-        # Step 1: Get search results (simplified)
-        search_timeout = 10.0
+                processing_time = time.time() - start_time
+
+                return QueryResponse(
+                    query=query,
+                    response=result.get('llm_response', 'No response generated'),
+                    search_results=formatted_results,
+                    query_type=QueryType.GENERAL,
+                    processing_time=processing_time,
+                    model_used="enhanced_processor"
+                )
+
+            except asyncio.TimeoutError:
+                logger.warning(f"Enhanced query timeout: {query[:50]}...")
+                # Fallback to basic search
+                pass
+
+        # Fallback to basic search + simple response
         try:
             search_results = await asyncio.wait_for(
-                asyncio.to_thread(
-                    rag_system.search_cves,
-                    request.query,
-                    adjusted_top_k,
-                    getattr(request, 'severity_filter', None),
-                    getattr(request, 'vendor_filter', None)
-                ),
-                timeout=search_timeout
+                asyncio.to_thread(rag_system.search_cves, query, top_k),
+                timeout=15.0
             )
+
+            # Generate simple response
+            if search_results:
+                cve_count = len(search_results)
+                top_cve = search_results[0]['metadata'].get('cve_id', 'Unknown')
+                simple_response = f"Found {cve_count} relevant vulnerabilities. Top result: {top_cve}. LLM processing unavailable - using basic search."
+            else:
+                simple_response = f"No vulnerabilities found for: {query}"
+
+            # Convert results
+            formatted_results = []
+            for result in search_results:
+                formatted_results.append(SearchResult(
+                    id=result.get('id', ''),
+                    text=result.get('text', result.get('content', '')),
+                    metadata=result.get('metadata', {}),
+                    score=result.get('score', 0.0),
+                    distance=result.get('distance', 1.0)
+                ))
+
+            processing_time = time.time() - start_time
+
+            return QueryResponse(
+                query=query,
+                response=simple_response,
+                search_results=formatted_results,
+                query_type=QueryType.SEARCH,
+                processing_time=processing_time,
+                model_used="basic_search"
+            )
+
         except asyncio.TimeoutError:
-            logger.error(f"Search timeout for query: {request.query[:50]}...")
-            raise HTTPException(status_code=408, detail="Search timed out. Please try a more specific query.")
-
-        # Step 2: Generate LLM response (optional)
-        llm_response = "Search completed successfully. LLM response generation not available."
-
-        if llm_client and search_results:
-            try:
-                # Use top context documents
-                max_context_docs = getattr(request, 'max_context_docs', 3)
-                context_docs = search_results[:max_context_docs]
-
-                # Build simple context
-                context_text = "\n\n".join([
-                    f"CVE: {doc.get('id', 'Unknown')}\n"
-                    f"Description: {doc.get('text', doc.get('content', ''))[:400]}..."
-                    for doc in context_docs
-                ])
-
-                # Simple prompt
-                prompt = f"""Based on the following CVE information, provide a helpful answer to the user's question.
-
-Question: {request.query}
-
-CVE Information:
-{context_text}
-
-Please provide a clear, accurate response focusing on the most relevant vulnerabilities and their impacts.
-
-Response:"""
-
-                # Generate with timeout
-                llm_response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        llm_client.generate_response,
-                        prompt,
-                        getattr(request, 'use_large_model', False)
-                    ),
-                    timeout=15.0
-                )
-            except asyncio.TimeoutError:
-                logger.warning(f"LLM timeout for query: {request.query[:50]}...")
-                llm_response = "Response generation timed out. Search results are available below."
-            except Exception as e:
-                logger.warning(f"LLM error: {e}")
-                llm_response = f"Response generation error. Search results are available below."
-
-        # Convert search results to proper format
-        pydantic_results = []
-        for result in search_results:
-            pydantic_results.append(SearchResult(
-                id=result.get('id', ''),
-                text=result.get('text', result.get('content', '')),
-                metadata=result.get('metadata', {}),
-                score=result.get('score', 0.0),
-                distance=result.get('distance', 1.0)
-            ))
-
-        processing_time = time.time() - start_time
-        logger.info(f"Query completed in {processing_time:.2f}s")
-
-        return QueryResponse(
-            query=request.query,
-            response=llm_response,
-            search_results=pydantic_results,
-            query_type=QueryType.SEARCH,
-            processing_time=processing_time,
-            model_used="simplified_rag"
-        )
+            raise HTTPException(status_code=408, detail="Query processing timed out")
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Query processing failed: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Query processing failed: {str(e)}")
+        processing_time = time.time() - start_time
+        logger.error(f"Query processing failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Query failed after {processing_time:.2f}s: {str(e)}"
+        )
 
 
 @router.post("/summary")
-async def get_vulnerability_summary(request: SummaryRequest):
-    """Get vulnerability summary using CVERAGSystem.get_vulnerability_summary"""
+async def optimized_summary(request: QueryRequest):
+    """Optimized summary endpoint"""
+    start_time = time.time()
+
     try:
-        if not request.query or len(request.query.strip()) == 0:
+        query = request.query.strip()
+        if not query:
             raise HTTPException(status_code=400, detail="Query cannot be empty")
 
         rag_system = get_rag_system()
 
-        logger.info(f"Getting summary for: {request.query[:50]}...")
+        # Get more results for summary
+        max_results = min(request.max_context_docs * 10, 50)
 
-        # Use the built-in summary method with timeout
-        try:
-            summary_data = await asyncio.wait_for(
-                asyncio.to_thread(
-                    rag_system.get_vulnerability_summary,
-                    request.query
-                ),
-                timeout=15.0
-            )
-        except asyncio.TimeoutError:
-            raise HTTPException(status_code=408, detail="Summary generation timed out")
-
-        # Check for error in summary
-        if "error" in summary_data:
-            raise HTTPException(status_code=404, detail=summary_data["error"])
-
-        # Get sample results for the response
-        sample_results = rag_system.search_cves(request.query, n_results=5)
-        pydantic_samples = []
-        for result in sample_results:
-            pydantic_samples.append(SearchResult(
-                id=result.get('id', ''),
-                text=result.get('text', result.get('content', '')),
-                metadata=result.get('metadata', {}),
-                score=result.get('score', 0.0),
-                distance=result.get('distance', 1.0)
-            ))
-
-        return SummaryResponse(
-            query=request.query,
-            total_results=summary_data.get('total_results', 0),
-            severity_distribution=summary_data.get('severities', {}),
-            top_vendors=summary_data.get('top_vendors', []),
-            top_products=summary_data.get('top_products', []),
-            common_weaknesses=summary_data.get('common_weaknesses', []),
-            sample_results=pydantic_samples
+        search_results = await asyncio.wait_for(
+            asyncio.to_thread(rag_system.search_cves, query, max_results),
+            timeout=20.0
         )
 
-    except HTTPException:
-        raise
+        # Analyze results
+        severities = {}
+        vendors = []
+        total_results = len(search_results)
+
+        for result in search_results:
+            metadata = result.get('metadata', {})
+
+            # Count severities
+            severity = metadata.get('severity', 'Unknown')
+            severities[severity] = severities.get(severity, 0) + 1
+
+            # Collect vendors (simplified)
+            affected_products = metadata.get('affected_products', [])
+            if affected_products:
+                vendors.extend(affected_products[:2])  # Limit to avoid performance issues
+
+        # Get top vendors
+        from collections import Counter
+        vendor_counts = Counter(vendors)
+        top_vendors = [vendor for vendor, count in vendor_counts.most_common(5)]
+
+        processing_time = time.time() - start_time
+
+        return {
+            "query": query,
+            "total_results": total_results,
+            "severity_distribution": severities,
+            "top_vendors": top_vendors,
+            "processing_time": processing_time,
+            "sample_results": search_results[:5]  # Return top 5 as samples
+        }
+
+    except asyncio.TimeoutError:
+        raise HTTPException(status_code=408, detail="Summary generation timed out")
     except Exception as e:
-        logger.error(f"Summary failed: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"Summary failed: {str(e)}")
+        processing_time = time.time() - start_time
+        logger.error(f"Summary failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Summary failed after {processing_time:.2f}s: {str(e)}"
+        )
 
 
 @router.get("/stats")
-async def get_system_stats():
-    """Get system statistics"""
+async def get_stats():
+    """Fast stats endpoint"""
     try:
         rag_system = get_rag_system()
-        stats = rag_system.get_collection_stats()
+        llm_client = get_llm_client()
+
+        # Get basic stats with timeout
+        stats = await asyncio.wait_for(
+            asyncio.to_thread(rag_system.get_collection_stats),
+            timeout=5.0
+        )
 
         return {
             "status": "operational",
             "total_documents": stats.get("total_documents", 0),
             "collection_name": stats.get("collection_name", "unknown"),
-            "api_version": "2.0.0-simplified"
+            "llm_available": llm_client.available if llm_client else False,
+            "llm_model": llm_client.config.model if llm_client and llm_client.available else None,
+            "version": "2.0.0-optimized"
+        }
+
+    except asyncio.TimeoutError:
+        return {
+            "status": "slow",
+            "message": "Stats loading slowly",
+            "version": "2.0.0-optimized"
         }
     except Exception as e:
-        logger.error(f"Stats error: {e}")
-        raise HTTPException(status_code=500, detail=f"Stats error: {str(e)}")
+        logger.error(f"Stats failed: {e}")
+        raise HTTPException(status_code=500, detail=f"Stats unavailable: {str(e)}")
+
+
+# Health endpoint that doesn't require authentication
+@router.get("/ping")
+async def ping():
+    """Ultra-fast ping endpoint"""
+    return {"status": "alive", "timestamp": datetime.now().isoformat()}
