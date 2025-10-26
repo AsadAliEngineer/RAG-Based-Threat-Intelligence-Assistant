@@ -523,7 +523,6 @@ class NetworkXGraphBuilder:
         try:
             import signal
             import platform
-            import time
             
             if platform.system() != 'Windows':
                 # Unix-like systems support SIGALRM
