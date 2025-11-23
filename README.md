@@ -95,6 +95,9 @@ python src/constructors/networkx_graph_builder.py
 
 ### **Step 4: Build Vector Database**
 ```bash
+
+python -m src.generators.export_kg_for_rag_direct --stats
+
 # Build vector database with graph-enhanced embeddings
 python -m src.generators.rag_system --build
 ```
