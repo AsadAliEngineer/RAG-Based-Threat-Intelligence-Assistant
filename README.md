@@ -1,10 +1,6 @@
 # 🔒 CVE Knowledge Graph & Security Intelligence System
 
-A comprehensive CVE knowledge graph system with advanced product extraction, Neo4j graph database, and AI-powered security intelligence capabilities. This system processes and analyzes vulnerability data to create a rich, interconnected knowledge base for security research and threat analysis.
-
-## 🧠 Hybrid KG+RAG Architecture
-
-This project combines a Neo4j knowledge graph (KG) for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. The KG enables deep analytics and relationship queries, while the RAG system retrieves rich, context-aware CVE information for natural language queries and LLM-powered analysis.
+This project combines a Neo4j knowledge graph (KG) for structured vulnerability data and relationships with a Retrieval-Augmented Generation (RAG) system for semantic search. 
 
 ## 🚀 Quick Start
 
@@ -95,23 +91,6 @@ data/
 - **Data Quality**: Automated duplicate detection, relationship validation
 - **Extensible Design**: Modular architecture for additional data sources
 
-## 🎯 Current Achievements
-
-### **✅ Phase 1: Knowledge Graph Construction - COMPLETE**
-- **38,995 CVEs** with rich metadata (CVSS scores, attack vectors, descriptions)
-- **14,499 Products** from 4,117 vendors with version information
-- **549 CWE** and **436 CAPEC** references for attack patterns
-- **106,234 CVE-Product relationships** showing vulnerability impact
-- **Neo4j Graph Database** with comprehensive schema and constraints
-
-### **✅ Phase 2: RAG System Development - COMPLETE**
-- **Vector Database**: 39,108 CVE document chunks in ChromaDB
-- **Semantic Search**: Natural language vulnerability queries
-- **Embedding Model**: all-MiniLM-L6-v2 (384-dimensional vectors)
-- **Search Capabilities**: SQL injection, XSS, RCE, buffer overflow detection
-- **Analytics**: Severity distribution, vendor analysis, similarity scoring
-- **Rich Context**: CWE weaknesses, CAPEC attack patterns, MITRE ATT&CK techniques
-
 ## 🚀 Usage Examples
 
 ### **RAG System Queries**
@@ -149,15 +128,6 @@ RETURN cve.id, cve.cvss_v3_severity, product.name
 ORDER BY cve.cvss_v3_base_score DESC
 ```
 
-## 🎯 Next Steps
-
-- [ ] **LLM Integration**: Connect to GPT-4, Claude, or local models
-- [ ] **Chat Interface**: Build conversational security assistant
-- [ ] **Web Dashboard**: Create user-friendly interface
-- [ ] **Real-time Updates**: Automated CVE data ingestion
-- [ ] **Advanced Analytics**: Machine learning vulnerability prediction
-- [ ] **MITRE ATT&CK Integration**: Threat intelligence mapping
-
 ## 📚 Documentation
 
 - **[Knowledge Graph Details](src/constructors/README.md)** - Comprehensive KG documentation
@@ -166,12 +136,5 @@ ORDER BY cve.cvss_v3_base_score DESC
 - **[RAG System](src/generators/rag_system.py)** - Retrieval-Augmented Generation system
 
 ## 🤝 Contributing
-
-This project demonstrates advanced techniques in:
-- **Graph Database Design** for security intelligence
-- **CPE Parsing** and product extraction
-- **CVE Data Processing** and enrichment
-- **Graph Analytics** for vulnerability insights
-- **RAG Systems** for semantic search and retrieval
 
 Contributions are welcome for additional data source integrations, enhanced analytics algorithms, graph visualization improvements, and documentation.
