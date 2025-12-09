@@ -41,18 +41,10 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    ```
 
 5. **Explore the Graph**
-   - **Neo4j Browser**: http://localhost:7474 (login: neo4j/password)
+   - **Neo4j Browser**: need to login
    - **Analytics**: `python graph_analytics.py`
    - **Query Examples**: See `neo4j_queries.md`
 
-## 🏗️ System Overview
-
-```
-Data Sources → Processing Pipeline → Neo4j Graph → Vector Database → RAG System
-    • NVD CVE         • CPE Parser        • 38K+ CVEs        • 39K Chunks     • Semantic Search
-    • CPE Data        • CVE Enrich        • 14K Products     • Embeddings     • Vulnerability Analysis
-    • CWE/CAPEC       • Graph Loader      • Rich Relations   • ChromaDB       • Natural Language Queries
-```
 
 ## 📁 Project Structure
 
