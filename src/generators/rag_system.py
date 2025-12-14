@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-RAG System for CVE Knowledge Graph
+Enhanced RAG System for CVE Knowledge Graph with GPU Optimization
 
 Usage examples:
   Build vector DB (default):
@@ -18,9 +18,11 @@ import os
 import logging
 from typing import List, Dict, Any, Optional, Tuple
 from datetime import datetime
+import gc
 
 from src.generators.rag_config import (
-    CVE_DATA_PATH, VECTOR_DB_PATH, EMBEDDING_MODEL_NAME, CHUNK_SIZE, CHUNK_OVERLAP, LOGGING_LEVEL
+    CVE_DATA_PATH, VECTOR_DB_PATH, EMBEDDING_MODEL_NAME, CHUNK_SIZE, CHUNK_OVERLAP, 
+    LOGGING_LEVEL, DEVICE, EMBEDDING_BATCH_SIZE, MAX_SEQ_LENGTH, CVE_YEAR_PATHS
 )
 
 import chromadb
@@ -28,6 +30,7 @@ from chromadb.config import Settings
 import numpy as np
 from sentence_transformers import SentenceTransformer
 import torch
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(level=LOGGING_LEVEL)
@@ -43,6 +46,11 @@ class CVEDocumentProcessor:
     def load_cve_documents(self, file_path: str) -> List[Dict[str, Any]]:
         """Load CVE documents from exported JSON file"""
         logger.info(f"Loading CVE documents from {file_path}")
+        
+        if not os.path.exists(file_path):
+            logger.error(f"File not found: {file_path}")
+            logger.info("Please run export_kg_for_rag_direct.py first to create RAG-ready data")
+            return []
         
         with open(file_path, 'r', encoding='utf-8') as f:
             documents = json.load(f)
@@ -65,12 +73,12 @@ class CVEDocumentProcessor:
             chunks.append({
                 'id': f"{doc['id']}_chunk_0",
                 'cve_id': doc['id'],
-                'text': f"CVE ID: {doc['id']} | Severity: {doc.get('cvss_v3_severity', 'Unknown')}",
+                'text': f"CVE ID: {doc['id']} | Severity: {doc.get('cvss_v3', {}).get('base_severity', 'Unknown')}",
                 'metadata': {
                     'cve_id': doc['id'],
                     'chunk_index': 0,
-                    'severity': doc.get('cvss_v3_severity'),
-                    'cvss_score': doc.get('cvss_v3_base_score'),
+                    'severity': doc.get('cvss_v3', {}).get('base_severity'),
+                    'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
                     'products': doc.get('affected_products', []),
                     'vendors': doc.get('affected_vendors', []),
                     'weaknesses': doc.get('weaknesses', []),
@@ -81,52 +89,45 @@ class CVEDocumentProcessor:
         
         # Simple text chunking (can be enhanced with more sophisticated methods)
         words = text.split()
-        current_chunk = []
-        chunk_index = 0
         
-        for word in words:
-            current_chunk.append(word)
-            
-            if len(current_chunk) >= self.chunk_size:
-                chunk_text = ' '.join(current_chunk)
-                chunks.append({
-                    'id': f"{doc['id']}_chunk_{chunk_index}",
-                    'cve_id': doc['id'],
-                    'text': chunk_text,
-                    'metadata': {
-                        'cve_id': doc['id'],
-                        'chunk_index': chunk_index,
-                        'severity': doc.get('cvss_v3_severity'),
-                        'cvss_score': doc.get('cvss_v3_base_score'),
-                        'products': doc.get('affected_products', []),
-                        'vendors': doc.get('affected_vendors', []),
-                        'weaknesses': doc.get('weaknesses', []),
-                        'attack_patterns': doc.get('attack_patterns', [])
-                    }
-                })
-                
-                # Keep overlap for next chunk
-                current_chunk = current_chunk[-self.chunk_overlap:] if self.chunk_overlap > 0 else []
-                chunk_index += 1
-        
-        # Add remaining text as final chunk
-        if current_chunk:
-            chunk_text = ' '.join(current_chunk)
+        if len(words) <= self.chunk_size:
+            # Document is small enough, no need to chunk
             chunks.append({
-                'id': f"{doc['id']}_chunk_{chunk_index}",
+                'id': f"{doc['id']}_chunk_0",
                 'cve_id': doc['id'],
-                'text': chunk_text,
+                'text': text,
                 'metadata': {
                     'cve_id': doc['id'],
-                    'chunk_index': chunk_index,
-                    'severity': doc.get('cvss_v3_severity'),
-                    'cvss_score': doc.get('cvss_v3_base_score'),
+                    'chunk_index': 0,
+                    'severity': doc.get('cvss_v3', {}).get('base_severity'),
+                    'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
                     'products': doc.get('affected_products', []),
                     'vendors': doc.get('affected_vendors', []),
                     'weaknesses': doc.get('weaknesses', []),
                     'attack_patterns': doc.get('attack_patterns', [])
                 }
             })
+        else:
+            # Split into overlapping chunks
+            for i in range(0, len(words), self.chunk_size - self.chunk_overlap):
+                chunk_words = words[i:i + self.chunk_size]
+                chunk_text = ' '.join(chunk_words)
+                
+                chunks.append({
+                    'id': f"{doc['id']}_chunk_{i//(self.chunk_size - self.chunk_overlap)}",
+                    'cve_id': doc['id'],
+                    'text': chunk_text,
+                    'metadata': {
+                        'cve_id': doc['id'],
+                        'chunk_index': i//(self.chunk_size - self.chunk_overlap),
+                        'severity': doc.get('cvss_v3', {}).get('base_severity'),
+                        'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
+                        'products': doc.get('affected_products', []),
+                        'vendors': doc.get('affected_vendors', []),
+                        'weaknesses': doc.get('weaknesses', []),
+                        'attack_patterns': doc.get('attack_patterns', [])
+                    }
+                })
         
         return chunks
     
@@ -135,7 +136,7 @@ class CVEDocumentProcessor:
         logger.info("Processing CVE documents into chunks...")
         
         all_chunks = []
-        for doc in documents:
+        for doc in tqdm(documents, desc="Chunking documents"):
             chunks = self.chunk_document(doc)
             all_chunks.extend(chunks)
         
@@ -143,21 +144,50 @@ class CVEDocumentProcessor:
         return all_chunks
 
 class CVEEmbeddingGenerator:
-    """Generate embeddings for CVE documents"""
+    """Generate embeddings for CVE documents with GPU optimization"""
     
     def __init__(self, model_name: str = EMBEDDING_MODEL_NAME):
         self.model_name = model_name
+        self.device = DEVICE
+        
+        # Load model with GPU optimization
+        logger.info(f"Loading embedding model: {model_name} on {self.device}")
         self.model = SentenceTransformer(model_name)
-        logger.info(f"Initialized embedding model: {model_name}")
+        self.model.to(self.device)
+        self.model.max_seq_length = MAX_SEQ_LENGTH
+        
+        logger.info(f"Initialized embedding model: {model_name} on {self.device}")
     
-    def generate_embeddings(self, texts: List[str]) -> np.ndarray:
-        """Generate embeddings for a list of texts"""
-        logger.info(f"Generating embeddings for {len(texts)} texts...")
+    def generate_embeddings(self, texts: List[str], batch_size: int = EMBEDDING_BATCH_SIZE) -> np.ndarray:
+        """Generate embeddings for a list of texts with GPU optimization"""
+        logger.info(f"Generating embeddings for {len(texts)} texts with batch size {batch_size}...")
         
-        embeddings = self.model.encode(texts, show_progress_bar=True)
-        logger.info(f"Generated embeddings with shape: {embeddings.shape}")
+        embeddings = []
         
-        return embeddings
+        # Process in batches to optimize GPU memory usage
+        for i in tqdm(range(0, len(texts), batch_size), desc="Generating embeddings"):
+            batch_texts = texts[i:i + batch_size]
+            
+            # Use mixed precision for faster computation
+            with torch.cuda.amp.autocast() if self.device == "cuda" else torch.no_grad():
+                batch_embeddings = self.model.encode(
+                    batch_texts,
+                    convert_to_tensor=True,
+                    show_progress_bar=False,
+                    normalize_embeddings=True
+                )
+            
+            # Move to CPU and convert to numpy
+            embeddings.append(batch_embeddings.cpu().numpy())
+            
+            # Clear GPU cache periodically
+            if self.device == "cuda" and i % (batch_size * 10) == 0:
+                torch.cuda.empty_cache()
+                gc.collect()
+        
+        result = np.vstack(embeddings)
+        logger.info(f"Generated embeddings with shape: {result.shape}")
+        return result
 
 class CVESearchEngine:
     """Vector search engine for CVE data"""
@@ -188,7 +218,7 @@ class CVESearchEngine:
         logger.info("Adding documents to vector database in batches...")
         
         total = len(chunks)
-        for start in range(0, total, batch_size):
+        for start in tqdm(range(0, total, batch_size), desc="Adding to vector store"):
             end = min(start + batch_size, total)
             batch_chunks = chunks[start:end]
             batch_embeddings = embeddings[start:end]
@@ -217,42 +247,94 @@ class CVESearchEngine:
     
     def search(self, query: str, n_results: int = 10, 
                filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
-        """Search for relevant CVE documents"""
+        """Search for relevant CVE documents with performance optimizations"""
         logger.info(f"Searching for: '{query}' (n_results={n_results})")
         
-        # Generate query embedding
-        embedding_model = SentenceTransformer("all-MiniLM-L6-v2")
-        query_embedding = embedding_model.encode([query]).tolist()
-        
-        # Prepare query arguments
-        query_args = {
-            "query_embeddings": query_embedding,
-            "n_results": n_results
-        }
-        if filter_dict:
-            query_args["where"] = filter_dict
-        
-        # Perform search
-        results = self.collection.query(**query_args)
-        
-        # Format results
-        formatted_results = []
-        ids = results.get('ids', [[]]) or [[]]
-        documents = results.get('documents', [[]]) or [[]]
-        metadatas = results.get('metadatas', [[]]) or [[]]
-        distances = results.get('distances', [[]]) or [[]]
-        if (ids and ids[0] and documents and documents[0] and metadatas and metadatas[0] and distances and distances[0]):
-            for i in range(len(ids[0])):
-                result = {
-                    'id': ids[0][i],
-                    'text': documents[0][i],
-                    'metadata': metadatas[0][i],
-                    'distance': distances[0][i]
-                }
-                formatted_results.append(result)
-        
-        logger.info(f"Found {len(formatted_results)} results")
-        return formatted_results
+        try:
+            # Limit query length to prevent performance issues
+            if len(query) > 1000:
+                query = query[:1000]
+                logger.warning("Query truncated to 1000 characters for performance")
+            
+            # Limit results to prevent memory issues
+            if n_results > 50:
+                n_results = 50
+                logger.warning("Results limited to 50 for performance")
+            
+            logger.info(f"Query after processing: '{query}'")
+            
+            # Generate query embedding using the same model
+            logger.info("Loading embedding model...")
+            embedding_model = SentenceTransformer(EMBEDDING_MODEL_NAME)
+            embedding_model.to(DEVICE)
+            logger.info(f"Embedding model loaded on {DEVICE}")
+            
+            try:
+                logger.info("Generating query embedding...")
+                # Use a more efficient encoding approach
+                query_embedding = embedding_model.encode([query], convert_to_tensor=False, show_progress_bar=False).tolist()
+                logger.info(f"Query embedding generated, shape: {len(query_embedding[0])}")
+            except Exception as e:
+                logger.error(f"Error generating embedding: {e}")
+                return []
+            
+            # Prepare query arguments with performance optimizations
+            query_args = {
+                "query_embeddings": query_embedding,
+                "n_results": n_results,
+                "include": ["documents", "metadatas", "distances"]  # Only get what we need
+            }
+            if filter_dict:
+                query_args["where"] = filter_dict
+            
+            logger.info(f"Query args: {query_args}")
+            logger.info(f"Collection name: {self.collection.name}")
+            logger.info(f"Collection count: {self.collection.count()}")
+            
+            # Perform search with performance monitoring
+            try:
+                logger.info("Performing vector search...")
+                results = self.collection.query(**query_args)
+                logger.info(f"Raw search results keys: {list(results.keys()) if results else 'None'}")
+            except Exception as e:
+                logger.error(f"Error in vector search: {e}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
+                return []
+            
+            # Format results efficiently
+            formatted_results = []
+            ids = results.get('ids', [[]]) or [[]]
+            documents = results.get('documents', [[]]) or [[]]
+            metadatas = results.get('metadatas', [[]]) or [[]]
+            distances = results.get('distances', [[]]) or [[]]
+            
+            logger.info(f"Results arrays - IDs: {len(ids[0]) if ids and ids[0] else 0}, Documents: {len(documents[0]) if documents and documents[0] else 0}")
+            
+            if (ids and ids[0] and documents and documents[0] and metadatas and metadatas[0] and distances and distances[0]):
+                for i in range(min(len(ids[0]), n_results)):
+                    # Limit text length to prevent memory issues
+                    text = documents[0][i]
+                    if len(text) > 2000:
+                        text = text[:2000] + "..."
+                    
+                    result = {
+                        'id': ids[0][i],
+                        'text': text,
+                        'metadata': metadatas[0][i],
+                        'distance': distances[0][i],
+                        'score': 1 - distances[0][i]  # Convert distance to similarity score
+                    }
+                    formatted_results.append(result)
+            
+            logger.info(f"Found {len(formatted_results)} results")
+            return formatted_results
+            
+        except Exception as e:
+            logger.error(f"Error in search: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            return []
     
     def get_collection_stats(self) -> Dict[str, Any]:
         """Get statistics about the vector database"""
@@ -272,12 +354,21 @@ class CVERAGSystem:
         self.vector_db_path = vector_db_path
         self.cve_data_path = cve_data_path
         
-        # Initialize components
+        # Initialize components (lazy loading for heavy components)
         self.processor = CVEDocumentProcessor()
-        self.embedding_generator = CVEEmbeddingGenerator()
+        self._embedding_generator = None  # Lazy load
         self.search_engine = CVESearchEngine(vector_db_path)
         
-        logger.info("Initialized CVE RAG System")
+        logger.info("Initialized Enhanced CVE RAG System (lazy loading enabled)")
+    
+    @property
+    def embedding_generator(self):
+        """Lazy load embedding generator"""
+        if self._embedding_generator is None:
+            logger.info("Loading embedding model (this may take a moment)...")
+            self._embedding_generator = CVEEmbeddingGenerator()
+            logger.info("Embedding model loaded successfully")
+        return self._embedding_generator
     
     def build_vector_database(self, force_rebuild: bool = False):
         """Build the vector database from CVE documents"""
@@ -292,6 +383,10 @@ class CVERAGSystem:
         
         # Load and process documents
         documents = self.processor.load_cve_documents(self.cve_data_path)
+        if not documents:
+            logger.error("No documents loaded. Please run export_kg_for_rag_direct.py first.")
+            return
+            
         chunks = self.processor.process_documents(documents)
         
         # Generate embeddings
@@ -387,19 +482,105 @@ class CVERAGSystem:
             "sample_results": results[:5]
         }
 
+    def search_cves_by_year(self, query: str, years: List[str] = None, n_results: int = 10, vendor_terms: list = None, product_terms: list = None) -> List[Dict[str, Any]]:
+        """Search for CVEs across specific years with better performance and flexible vendor/product matching"""
+        import re
+        if years is None or not years:
+            years = ['2021', '2022', '2023', '2024']
+        logger.info(f"Searching for '{query}' across years: {years}")
+        all_results = []
+        query_lower = query.lower()
+        vendor_terms = vendor_terms or []
+        product_terms = product_terms or []
+        for year in years:
+            try:
+                year_data_path = CVE_YEAR_PATHS.get(year)
+                if not year_data_path or not os.path.exists(year_data_path):
+                    logger.warning(f"Year {year} data not found: {year_data_path}")
+                    continue
+                logger.info(f"Searching year {year}...")
+                with open(year_data_path, 'r', encoding='utf-8') as f:
+                    year_docs = json.load(f)
+                year_results = []
+                for doc in year_docs:
+                    content = doc.get('content', '').lower()
+                    # Flexible vendor/product matching
+                    vendor_match = False
+                    product_match = False
+                    doc_vendors = doc.get('metadata', {}).get('vendors', []) or doc.get('vendors', [])
+                    doc_products = doc.get('metadata', {}).get('products', []) or doc.get('affected_products', [])
+                    # Normalize to list
+                    if isinstance(doc_vendors, str):
+                        doc_vendors = [doc_vendors]
+                    if isinstance(doc_products, str):
+                        doc_products = [doc_products]
+                    # Vendor match
+                    for vterm in vendor_terms:
+                        for v in doc_vendors:
+                            if vterm.lower() in v.lower():
+                                vendor_match = True
+                                break
+                        if vendor_match:
+                            break
+                    # Product match
+                    for pterm in product_terms:
+                        for p in doc_products:
+                            if pterm.lower() in p.lower():
+                                product_match = True
+                                break
+                        if product_match:
+                            break
+                    # If vendor/product terms are provided, require at least one match
+                    if (vendor_terms or product_terms):
+                        if not (vendor_match or product_match):
+                            continue
+                    # Otherwise, fallback to content search
+                    if not (vendor_terms or product_terms):
+                        if query_lower not in content:
+                            continue
+                    score = content.count(query_lower) / max(1, len(content))
+                    year_results.append({
+                        'id': doc.get('id'),
+                        'text': doc.get('content', '')[:1000],
+                        'metadata': {
+                            'cve_id': doc.get('id'),
+                            'year': year,
+                            'source': doc.get('source'),
+                            'severity': doc.get('cvss_v3', {}).get('base_severity', 'Unknown'),
+                            'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
+                            'affected_products': doc.get('affected_products', []),
+                            'cwe_refs': doc.get('cwe_refs', []),
+                            'mitre_techniques': doc.get('mitre_techniques', []),
+                            'is_in_kev': doc.get('is_in_kev', False)
+                        },
+                        'score': score,
+                        'distance': 1 - score
+                    })
+                year_results.sort(key=lambda x: x['score'], reverse=True)
+                all_results.extend(year_results[:n_results])
+                logger.info(f"Found {len(year_results)} results in {year}")
+            except Exception as e:
+                logger.error(f"Error searching year {year}: {e}")
+                continue
+        all_results.sort(key=lambda x: x['score'], reverse=True)
+        final_results = all_results[:n_results]
+        logger.info(f"Total results found: {len(final_results)}")
+        return final_results
+
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="RAG System for CVE Knowledge Graph")
+    parser = argparse.ArgumentParser(description="Enhanced RAG System for CVE Knowledge Graph")
     parser.add_argument('--build', action='store_true', help='Build the vector database from CVE documents')
     parser.add_argument('--search', type=str, help='Search for CVEs matching the query')
     parser.add_argument('--summary', type=str, help='Get a vulnerability summary for the query')
     parser.add_argument('--n_results', type=int, default=3, help='Number of results to return for search')
+    parser.add_argument('--force_rebuild', action='store_true', help='Force rebuild of vector database')
     args = parser.parse_args()
 
     rag_system = CVERAGSystem()
 
     if args.build:
-        rag_system.build_vector_database()
+        rag_system.build_vector_database(force_rebuild=args.force_rebuild)
     elif args.search:
         results = rag_system.search_cves(args.search, n_results=args.n_results)
         for i, result in enumerate(results, 1):
@@ -409,7 +590,7 @@ if __name__ == "__main__":
             print(f"   Vendors: {metadata.get('vendors', '')}")
             print(f"   CWE: {metadata.get('weaknesses', '')}")
             print(f"   CAPEC: {metadata.get('attack_patterns', '')}")
-            print(f"   Distance: {result['distance']:.4f}\n")
+            print(f"   Score: {result['score']:.4f}\n")
     elif args.summary:
         summary = rag_system.get_vulnerability_summary(args.summary)
         print(f"Vulnerability Summary for '{args.summary}':")
