@@ -720,13 +720,13 @@ This project is distributed under the **MIT License**.
 <table>
   <tr>
     <td width="150" align="center">
-      <img src="https://github.com/AsadAliEng.png?size=160" width="120" alt="Asad Ali GitHub avatar"><br>
+      <img src="https://github.com/AsadAliEngineer.png?size=160" width="120" alt="Asad Ali GitHub avatar"><br>
       <strong>Asad Ali</strong>
     </td>
     <td>
       <strong>AI, Blockchain & Software Engineer</strong><br><br>
-      🐙 GitHub: <a href="https://github.com/AsadAliEng">@AsadAliEng</a><br>
-      📧 Email: <a href="mailto:asadali.cryptoeng@gmail.com">asadali.cryptoeng@gmail.com</a><br>
+      🐙 GitHub: <a href="https://github.com/AsadAliEngineer">@AsadAliEngineer</a><br>
+      📧 Email: <a href="mailto:asadalieng1107@gmail.com">asadalieng1107@gmail.com</a><br>
       🚀 Focus: intelligent systems, applied machine learning, AI security, Web3 products, automation, and production-oriented engineering
     </td>
   </tr>
