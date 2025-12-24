@@ -14,7 +14,7 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
 1. **Clone and setup**
    ```bash
    git clone <repository-url>
-   cd LLM-RAG-SimGame
+   cd CVE-KGRAG
    python -m venv venv
    source venv/bin/activate  # On Windows: venv\Scripts\activate
    pip install -r requirements.txt
