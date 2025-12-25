@@ -102,6 +102,8 @@ ORDER BY cve.cvss_v3_base_score DESC
    # Correlates and enriches the collected data, producing processed CVE and CPE documents for graph construction.
    ```
 
+  Find the processed data (e.g., "enhanced_documents_cve_2024.json") in folder "data/CVE/processed" and put it under the folder "data/knowledge_base" before proceeding with the next steps.
+
 5. **Parse CPEs and Extract Products/Vendors**
    ```bash
    cd ../constructors
