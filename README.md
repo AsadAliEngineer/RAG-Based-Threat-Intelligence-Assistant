@@ -187,7 +187,7 @@ Relationships: CVE→Product, CVE→CWE, CVE→CAPEC, CVE→MITRE, Product→Ven
 ```
 
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
@@ -227,13 +227,13 @@ data/
 - `POST /api/v1/summary` - Statistical analysis
 - `GET /api/v1/health` - System health check
   
-## 🧪 Testing
+## Testing
 
 ```bash
 pytest
 ```
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
