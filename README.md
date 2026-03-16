@@ -86,6 +86,8 @@ ORDER BY cve.cvss_v3_base_score DESC
      -e NEO4J_PLUGINS='["apoc"]' \
      neo4j:latest
    ```
+   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
+
 
 3. **Collect, Correlate, and Process Data**
 
@@ -111,8 +113,7 @@ ORDER BY cve.cvss_v3_base_score DESC
    # Parses CPE strings from processed CVE data, extracts and normalizes products and vendors,
    # and outputs structured product/vendor data for graph construction.
    ```
-   > **Note:** Processed and parsed data are not included in the repository. You must run the collection, processing, and CPE parsing steps to generate the required files before building the knowledge graph.
-
+  
 6. **Build Knowledge Graph**
    ```bash
    cd ../constructors
