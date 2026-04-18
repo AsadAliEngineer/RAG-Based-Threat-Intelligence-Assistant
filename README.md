@@ -74,23 +74,6 @@ data/
 └── reports/               # Analysis Reports
 ```
 
-## 🔧 Core Components
-
-- **CPE Parser System**: Parses CPE 2.3 strings with vendor normalization
-- **Enhanced Neo4j Loader**: Loads rich CVE metadata and product ecosystem
-- **Graph Analytics**: Vulnerability insights and trend analysis
-- **RAG System**: Semantic search and retrieval for CVE analysis
-
-## 📈 Key Features
-
-- **Rich CVE Metadata**: CVSS scores, attack vectors, CWE/CAPEC mappings
-- **Product Ecosystem**: Vendor normalization, version information, criticality scoring
-- **Graph Analytics**: Vulnerability distribution, risk assessment, trend analysis
-- **Semantic Search**: Natural language queries for vulnerability discovery
-- **Vector Database**: 39,108 CVE chunks with 384-dimensional embeddings
-- **Data Quality**: Automated duplicate detection, relationship validation
-- **Extensible Design**: Modular architecture for additional data sources
-
 ## 🚀 Usage Examples
 
 ### **RAG System Queries**
