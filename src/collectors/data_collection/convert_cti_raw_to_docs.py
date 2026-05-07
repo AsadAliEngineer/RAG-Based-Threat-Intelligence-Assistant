@@ -1,3 +1,25 @@
+<<<<<<< HEAD
+"""
+Main entrypoint for CTI raw data conversion. Orchestrates all conversion modules.
+"""
+from pathlib import Path
+from src.collectors.data_collection.cti_config import CTIConfig
+from src.collectors.data_collection.cti_logger import get_logger
+from src.collectors.data_collection.cti_converters.kev_converter import KEVConverter
+from src.collectors.data_collection.cti_converters.csaf_converter import CSAFConverter
+from src.collectors.data_collection.cti_converters.capec_converter import CAPECConverter
+from src.collectors.data_collection.cti_converters.attack_converter import AttackConverter
+# from src.collectors.data_collection.cti_converters.tactics_converter import TacticsConverter  # If needed
+# from src.collectors.data_collection.cti_converters.exploitdb_converter import ExploitDBConverter  # If needed
+
+def main() -> None:
+    """Run all CTI data conversions."""
+    config = CTIConfig()
+    raw_dir, docs_dir, logs_dir = config.get_paths()
+    log_file = logs_dir / "cti_conversion.log"
+    logger = get_logger(log_file)
+    logger.info("=== CTI Conversion Process Started ===")
+=======
 # data_collection/convert_cti_raw_to_docs.py
 
 import sys
@@ -926,49 +948,49 @@ if __name__ == "__main__":
                 handler.flush()
         exit(1)
 
+>>>>>>> e4768ae8d3512210925fbdbb8c63db119c443311
     total_converted = 0
 
     logger.info("Converting KEV files...")
-    print("Converting KEV files...")
-    kev_count = convert_kev_files()
+    kev_count = KEVConverter(raw_dir, docs_dir, logger).convert()
     total_converted += kev_count
     logger.info(f"KEV conversion completed: {kev_count} files")
 
     logger.info("Converting CSAF files...")
-    print("Converting CSAF files...")
-    csaf_count = find_and_convert_csaf_files()
+    csaf_count = CSAFConverter(raw_dir, docs_dir, logger).convert()
     total_converted += csaf_count
     logger.info(f"CSAF conversion completed: {csaf_count} files")
 
     logger.info("Converting CAPEC files...")
-    print("Converting CAPEC files...")
-    capec_count = convert_capec_files()
+    capec_count = CAPECConverter(raw_dir, docs_dir, logger).convert()
     total_converted += capec_count
     logger.info(f"CAPEC conversion completed: {capec_count} files")
 
     logger.info("Converting ATT&CK techniques...")
-    print("Converting ATT&CK techniques...")
-    attack_count = convert_attack_files()
+    attack_count = AttackConverter(raw_dir, docs_dir, logger).convert()
     total_converted += attack_count
     logger.info(f"ATT&CK techniques conversion completed: {attack_count} files")
 
-    logger.info("Converting ATT&CK tactics...")
-    print("Converting ATT&CK tactics...")
-    tactics_count = convert_tactics_files()
-    total_converted += tactics_count
-    logger.info(f"ATT&CK tactics conversion completed: {tactics_count} files")
+    # logger.info("Converting ATT&CK tactics...")
+    # tactics_count = TacticsConverter(raw_dir, docs_dir, logger).convert()
+    # total_converted += tactics_count
+    # logger.info(f"ATT&CK tactics conversion completed: {tactics_count} files")
 
-    logger.info("Converting ExploitDB files...")
-    print("Converting ExploitDB files...")
-    exploitdb_count = convert_exploitdb_files()
-    total_converted += exploitdb_count
-    logger.info(f"ExploitDB conversion completed: {exploitdb_count} files")
+    # logger.info("Converting ExploitDB files...")
+    # exploitdb_count = ExploitDBConverter(raw_dir, docs_dir, logger).convert()
+    # total_converted += exploitdb_count
+    # logger.info(f"ExploitDB conversion completed: {exploitdb_count} files")
 
-    final_msg = f"Conversion complete! Total files converted: {total_converted}"
-    logger.info(final_msg)
-    logger.info(f"Converted raw CTI from {RAW_CTI_DIR} into JSON docs at {DOCS_CTI_DIR}")
+    logger.info(f"Conversion complete! Total files converted: {total_converted}")
+    logger.info(f"Converted raw CTI from {raw_dir} into JSON docs at {docs_dir}")
     logger.info("=== CTI Conversion Process Completed ===")
+    print(f"Conversion complete! Total files converted: {total_converted}")
+    print(f"Converted raw CTI from {raw_dir} into JSON docs at {docs_dir}")
 
+<<<<<<< HEAD
+if __name__ == "__main__":
+    main()
+=======
     print(final_msg)
     print(f"Converted raw CTI from {RAW_CTI_DIR} into JSON docs at {DOCS_CTI_DIR}")
 
@@ -988,3 +1010,4 @@ if __name__ == "__main__":
             print("WARNING: Log file is empty!")
     else:
         print(f"WARNING: Log file was not created at {log_file}")
+>>>>>>> e4768ae8d3512210925fbdbb8c63db119c443311

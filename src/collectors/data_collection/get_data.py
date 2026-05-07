@@ -1,4 +1,8 @@
 # data_collection/get_data.py
+<<<<<<< HEAD
+
+=======
+>>>>>>> e4768ae8d3512210925fbdbb8c63db119c443311
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', '..'))
