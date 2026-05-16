@@ -6,7 +6,7 @@ This directory contains the constructed knowledge graph data, analytics, and exp
 
 ```
 knowledge_graph/
-├── analytics/          # Graph analytics and statistics (the current one is based on 2024 CVEs only, feel free to add more)
+├── analytics/         # Graph analytics and statistics (the current one is based on 2024 CVEs only, feel free to add more)
 ├── exports/           # Data exports from Neo4j
 ├── backups/           # Database backups and snapshots
 └── README.md          # This file
