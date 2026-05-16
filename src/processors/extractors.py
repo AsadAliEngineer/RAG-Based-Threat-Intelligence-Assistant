@@ -28,7 +28,7 @@ def load_cwe_capec_mitre_mapping(mapping_file: Path, logger: logging.Logger) -> 
         logger.warning(f"Mapping file not found: {mapping_file}")
         return {}
     try:
-        with open(mapping_file, 'r') as f:
+        with open(mapping_file, 'r', encoding='utf-8') as f:
             mapping = json.load(f)
         logger.info(f"Loaded CWE-CAPEC-MITRE mapping with {len(mapping)} entries")
         return mapping
@@ -44,7 +44,7 @@ def load_csaf_data(csaf_dir: Path, logger: logging.Logger) -> tuple[List[Dict], 
     csaf_by_cve = {}
     for file in csaf_files:
         try:
-            with open(file, 'r') as f:
+            with open(file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 entries = data if isinstance(data, list) else [data]
                 for entry in entries:
@@ -67,7 +67,7 @@ def load_exploitdb_data(exploitdb_dir: Path, logger: logging.Logger) -> tuple[Li
     exploitdb_by_cve = {}
     for file in exploitdb_files:
         try:
-            with open(file, 'r') as f:
+            with open(file, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 entries = data if isinstance(data, list) else [data]
                 for entry in entries:
@@ -90,7 +90,7 @@ def load_kev_data(kev_dir: Path, logger: logging.Logger) -> tuple[List[Dict], Di
     kev_by_cve = {}
     for file in kev_files:
         try:
-            with open(file, 'r') as f:
+            with open(file, 'r', encoding='utf-8') as f:
                 entry = json.load(f)
                 cve_id = entry.get('id', '')
                 if cve_id and cve_id.startswith('CVE-'):

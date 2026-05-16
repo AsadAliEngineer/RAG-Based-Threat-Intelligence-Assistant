@@ -69,16 +69,124 @@ class CVEProcessor:
         extract_zip_files(self.zip_dir, self.json_dir, logger)
     
     def load_cwe_capec_mitre_mapping(self):
-        self.cwe_capec_mitre_mapping = load_cwe_capec_mitre_mapping(self.cti_raw_dir / "cwe_capec_mitre_mapping.json", logger)
-    
+        # Try multiple possible locations for the mapping file
+        mapping_locations = [
+            self.cti_raw_dir / "cwe_capec_mitre_mapping.json",
+            self.cti_docs_dir / "cwe_capec_mitre_mapping.json",
+            self.cti_raw_dir / "mappings" / "cwe_capec_mitre_mapping.json"
+        ]
+        
+        for location in mapping_locations:
+            if location.exists():
+                self.cwe_capec_mitre_mapping = load_cwe_capec_mitre_mapping(location, logger)
+                logger.info(f"Loaded CWE-CAPEC-MITRE mapping from: {location}")
+                return
+        
+        logger.warning("CWE-CAPEC-MITRE mapping file not found in any location")
+        self.cwe_capec_mitre_mapping = {}
+
     def load_csaf_data(self):
-        self.csaf_data, self.csaf_by_cve = load_csaf_data(self.cti_docs_dir / "csaf", logger)
-    
+        # Try multiple possible locations for CSAF data
+        csaf_locations = [
+            self.cti_docs_dir / "csaf",
+            self.cti_raw_dir / "csaf",
+            self.cti_raw_dir / "CSAF"
+        ]
+        
+        for location in csaf_locations:
+            if location.exists():
+                self.csaf_data, self.csaf_by_cve = load_csaf_data(location, logger)
+                logger.info(f"Loaded CSAF data from: {location}")
+                return
+        
+        logger.warning("CSAF data not found in any location")
+        self.csaf_data, self.csaf_by_cve = [], {}
+
     def load_exploitdb_data(self):
-        self.exploitdb_data, self.exploitdb_by_cve = load_exploitdb_data(self.cti_docs_dir / "exploitdb", logger)
-    
+        # Try multiple possible locations for ExploitDB data
+        exploitdb_locations = [
+            self.cti_docs_dir / "exploitdb",
+            self.cti_raw_dir / "exploitdb",
+            self.cti_raw_dir / "ExploitDB"
+        ]
+        
+        for location in exploitdb_locations:
+            if location.exists():
+                self.exploitdb_data, self.exploitdb_by_cve = load_exploitdb_data(location, logger)
+                logger.info(f"Loaded ExploitDB data from: {location}")
+                return
+        
+        logger.warning("ExploitDB data not found in any location")
+        self.exploitdb_data, self.exploitdb_by_cve = [], {}
+
     def load_kev_data(self):
-        self.kev_data, self.kev_by_cve = load_kev_data(self.cti_docs_dir / "kev", logger)
+        # Try multiple possible locations for KEV data
+        kev_locations = [
+            self.cti_docs_dir / "kev",
+            self.cti_raw_dir / "kev",
+            self.cti_raw_dir / "KEV",
+            self.cti_raw_dir / "known_exploited_vulnerabilities.csv"
+        ]
+        
+        for location in kev_locations:
+            if location.exists():
+                if location.suffix == '.csv':
+                    # Direct CSV file
+                    self.kev_data, self.kev_by_cve = load_kev_data(location.parent, logger)
+                else:
+                    # Directory with JSON files
+                    self.kev_data, self.kev_by_cve = load_kev_data(location, logger)
+                logger.info(f"Loaded KEV data from: {location}")
+                return
+        
+        logger.warning("KEV data not found in any location")
+        self.kev_data, self.kev_by_cve = [], {}
+
+    def _clean_cvss_data(self, cvss_data: Dict) -> Dict:
+        """Remove null values from CVSS data"""
+        if not cvss_data:
+            return {}
+        
+        cleaned = {}
+        for key, value in cvss_data.items():
+            if value is not None:
+                cleaned[key] = value
+        
+        return cleaned
+
+    def _fix_product_name(self, product: str) -> str:
+        """Fix escaped slashes in product names"""
+        if not product:
+            return product
+        
+        # Fix escaped slashes: \\/ -> //
+        fixed = product.replace('\\/', '//')
+        return fixed
+
+    def _extract_and_fix_product_from_cpe(self, cpe: str) -> str:
+        """Extract product name from CPE and fix escaped slashes"""
+        if not cpe:
+            return ""
+        
+        # Parse CPE to extract product information
+        parts = cpe.split(':')
+        if len(parts) >= 5:
+            product = parts[4]
+            return self._fix_product_name(product)
+        
+        return ""
+
+    def _clean_cpe_match(self, cpe_match: Dict) -> Dict:
+        """Clean CPE match data by removing null values"""
+        if not cpe_match:
+            return {}
+        
+        cleaned = {}
+        for key, value in cpe_match.items():
+            if value is not None:
+                cleaned[key] = value
+        
+        return cleaned
     
     def process_all_cve_files(self, max_cves: Optional[int] = None) -> List[Dict]:
         """Process all CVE files and extract structured data"""
@@ -133,10 +241,11 @@ class CVEProcessor:
             
             for cve_item in cve_items:
                 cve_data = cve_item.get('cve', {})
+                configurations = cve_item.get('configurations', {})
                 cve_id = cve_data.get('CVE_data_meta', {}).get('ID', '')
                 
                 if cve_id:
-                    processed_cve = self._process_v1_cve(cve_data)
+                    processed_cve = self._process_v1_cve(cve_item, configurations)
                     if processed_cve:
                         processed_cves.append(processed_cve)
             
@@ -157,10 +266,11 @@ class CVEProcessor:
             
             for vuln in vulnerabilities:
                 cve_data = vuln.get('cve', {})
+                configurations = vuln.get('configurations', {})
                 cve_id = cve_data.get('id', '')
                 
                 if cve_id:
-                    processed_cve = self._process_v2_cve(cve_data)
+                    processed_cve = self._process_v2_cve(cve_data, configurations)
                     if processed_cve:
                         processed_cves.append(processed_cve)
             
@@ -170,9 +280,10 @@ class CVEProcessor:
             logger.error(f"Error processing {json_file.name}: {e}")
             return []
     
-    def _process_v1_cve(self, cve_data: Dict) -> Optional[Dict]:
+    def _process_v1_cve(self, cve_item: Dict, configurations: Dict) -> Optional[Dict]:
         """Process a single v1.1 CVE"""
         try:
+            cve_data = cve_item.get('cve', {})
             cve_id = cve_data.get('CVE_data_meta', {}).get('ID', '')
             
             # Get description
@@ -184,7 +295,7 @@ class CVEProcessor:
                     break
             
             # Get CVSS scores and vectors with version information
-            impact = cve_data.get('impact', {})
+            impact = cve_item.get('impact', {})
             base_metric_v3 = impact.get('baseMetricV3', {})
             cvss_v3 = base_metric_v3.get('cvssV3', {})
             base_metric_v2 = impact.get('baseMetricV2', {})
@@ -203,80 +314,126 @@ class CVEProcessor:
             references_data = cve_data.get('references', {}).get('reference_data', [])
             ref_urls = [ref.get('url', '') for ref in references_data if ref.get('url')]
             
-            # Get CPE configurations (detailed)
-            configurations = cve_data.get('configurations', {}).get('nodes', [])
+            # Get CPE configurations (detailed) - now using the passed configurations parameter
             cpe_configurations = []
             affected_products = []
             
-            for config in configurations:
+            # Handle the nested structure properly
+            nodes = configurations.get('nodes', [])
+            
+            for node in nodes:
                 config_entry = {
-                    'operator': config.get('operator', ''),
+                    'operator': node.get('operator', ''),
                     'cpe_match': []
                 }
                 
-                for cpe_match in config.get('cpe_match', []):
+                # Process cpe_match entries in this node
+                for cpe_match in node.get('cpe_match', []):
                     cpe = cpe_match.get('cpe23Uri', '')
                     if cpe:
-                        # Parse CPE to extract product information
-                        parts = cpe.split(':')
-                        if len(parts) >= 5:
-                            affected_products.append(parts[4])
+                        # Parse CPE to extract product information and fix escaped slashes
+                        product = self._extract_and_fix_product_from_cpe(cpe)
+                        if product:
+                            affected_products.append(product)
                         
-                        config_entry['cpe_match'].append({
-                            'cpe23Uri': cpe,
+                        # Fix the CPE URI itself
+                        fixed_cpe = self._fix_product_name(cpe)
+                        
+                        # Clean CPE match data
+                        cleaned_cpe_match = self._clean_cpe_match({
+                            'cpe23Uri': fixed_cpe,
                             'versionStartIncluding': cpe_match.get('versionStartIncluding'),
                             'versionStartExcluding': cpe_match.get('versionStartExcluding'),
                             'versionEndIncluding': cpe_match.get('versionEndIncluding'),
                             'versionEndExcluding': cpe_match.get('versionEndExcluding'),
                             'vulnerable': cpe_match.get('vulnerable', True)
                         })
+                        
+                        config_entry['cpe_match'].append(cleaned_cpe_match)
+                
+                # Also check children nodes recursively
+                children = node.get('children', [])
+                for child in children:
+                    for cpe_match in child.get('cpe_match', []):
+                        cpe = cpe_match.get('cpe23Uri', '')
+                        if cpe:
+                            # Parse CPE to extract product information and fix escaped slashes
+                            product = self._extract_and_fix_product_from_cpe(cpe)
+                            if product:
+                                affected_products.append(product)
+                            
+                            # Fix the CPE URI itself
+                            fixed_cpe = self._fix_product_name(cpe)
+                            
+                            # Clean CPE match data
+                            cleaned_cpe_match = self._clean_cpe_match({
+                                'cpe23Uri': fixed_cpe,
+                                'versionStartIncluding': cpe_match.get('versionStartIncluding'),
+                                'versionStartExcluding': cpe_match.get('versionStartExcluding'),
+                                'versionEndIncluding': cpe_match.get('versionEndIncluding'),
+                                'versionEndExcluding': cpe_match.get('versionEndExcluding'),
+                                'vulnerable': cpe_match.get('vulnerable', True)
+                            })
+                            
+                            config_entry['cpe_match'].append(cleaned_cpe_match)
                 
                 if config_entry['cpe_match']:
                     cpe_configurations.append(config_entry)
             
-            return {
+            # Clean CVSS data - only include non-null values
+            cleaned_cvss_v3 = self._clean_cvss_data({
+                'version': '3.0',
+                'base_score': cvss_v3.get('baseScore'),
+                'vector_string': cvss_v3.get('vectorString'),
+                'base_severity': cvss_v3.get('baseSeverity'),
+                'attack_vector': cvss_v3.get('attackVector'),
+                'attack_complexity': cvss_v3.get('attackComplexity'),
+                'privileges_required': cvss_v3.get('privilegesRequired'),
+                'user_interaction': cvss_v3.get('userInteraction'),
+                'scope': cvss_v3.get('scope'),
+                'confidentiality_impact': cvss_v3.get('confidentialityImpact'),
+                'integrity_impact': cvss_v3.get('integrityImpact'),
+                'availability_impact': cvss_v3.get('availabilityImpact')
+            })
+            
+            cleaned_cvss_v2 = self._clean_cvss_data({
+                'version': '2.0',
+                'base_score': cvss_v2.get('baseScore'),
+                'vector_string': cvss_v2.get('vectorString'),
+                'severity': base_metric_v2.get('severity'),
+                'access_vector': cvss_v2.get('accessVector'),
+                'access_complexity': cvss_v2.get('accessComplexity'),
+                'authentication': cvss_v2.get('authentication'),
+                'confidentiality_impact': cvss_v2.get('confidentialityImpact'),
+                'integrity_impact': cvss_v2.get('integrityImpact'),
+                'availability_impact': cvss_v2.get('availabilityImpact')
+            })
+            
+            result = {
                 'cve_id': cve_id,
                 'description': description,
-                'cvss_v3': {
-                    'version': '3.0',
-                    'base_score': cvss_v3.get('baseScore'),
-                    'vector_string': cvss_v3.get('vectorString'),
-                    'base_severity': cvss_v3.get('baseSeverity'),
-                    'attack_vector': cvss_v3.get('attackVector'),
-                    'attack_complexity': cvss_v3.get('attackComplexity'),
-                    'privileges_required': cvss_v3.get('privilegesRequired'),
-                    'user_interaction': cvss_v3.get('userInteraction'),
-                    'scope': cvss_v3.get('scope'),
-                    'confidentiality_impact': cvss_v3.get('confidentialityImpact'),
-                    'integrity_impact': cvss_v3.get('integrityImpact'),
-                    'availability_impact': cvss_v3.get('availabilityImpact')
-                },
-                'cvss_v2': {
-                    'version': '2.0',
-                    'base_score': cvss_v2.get('baseScore'),
-                    'vector_string': cvss_v2.get('vectorString'),
-                    'severity': base_metric_v2.get('severity'),
-                    'access_vector': cvss_v2.get('accessVector'),
-                    'access_complexity': cvss_v2.get('accessComplexity'),
-                    'authentication': cvss_v2.get('authentication'),
-                    'confidentiality_impact': cvss_v2.get('confidentialityImpact'),
-                    'integrity_impact': cvss_v2.get('integrityImpact'),
-                    'availability_impact': cvss_v2.get('availabilityImpact')
-                },
                 'cwe_ids': list(set(cwe_ids)),
                 'affected_products': list(set(affected_products)),
                 'cpe_configurations': cpe_configurations,
                 'references': ref_urls,
-                'published_date': cve_data.get('publishedDate', ''),
-                'last_modified_date': cve_data.get('lastModifiedDate', ''),
+                'published_date': cve_item.get('publishedDate', ''),
+                'last_modified_date': cve_item.get('lastModifiedDate', ''),
                 'source': 'NVD v1.1'
             }
+            
+            # Only add CVSS data if it has actual values
+            if cleaned_cvss_v3:
+                result['cvss_v3'] = cleaned_cvss_v3
+            if cleaned_cvss_v2:
+                result['cvss_v2'] = cleaned_cvss_v2
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error processing v1 CVE: {e}")
             return None
     
-    def _process_v2_cve(self, cve_data: Dict) -> Optional[Dict]:
+    def _process_v2_cve(self, cve_data: Dict, configurations: Dict) -> Optional[Dict]:
         """Process a single v2.0 CVE"""
         try:
             cve_id = cve_data.get('id', '')
@@ -352,45 +509,82 @@ class CVEProcessor:
             references = cve_data.get('references', [])
             ref_urls = [ref.get('url', '') for ref in references if ref.get('url')]
             
-            # Get CPE configurations (detailed)
-            configurations = cve_data.get('configurations', [])
+            # Get CPE configurations (detailed) - now using the passed configurations parameter
             cpe_configurations = []
             affected_products = []
             
-            for config in configurations:
-                for node in config.get('nodes', []):
-                    config_entry = {
-                        'operator': node.get('operator', ''),
-                        'negate': node.get('negate', False),
-                        'cpe_match': []
-                    }
-                    
-                    for cpe_match in node.get('cpeMatch', []):
-                        cpe = cpe_match.get('criteria', '')  # v2.0 uses 'criteria' instead of 'cpe23Uri'
-                        if cpe:
-                            # Parse CPE to extract product information
-                            parts = cpe.split(':')
-                            if len(parts) >= 5:
-                                affected_products.append(parts[4])
-                            
-                            config_entry['cpe_match'].append({
-                                'cpe23Uri': cpe,  # Keep consistent field name
-                                'versionStartIncluding': cpe_match.get('versionStartIncluding'),
-                                'versionStartExcluding': cpe_match.get('versionStartExcluding'),
-                                'versionEndIncluding': cpe_match.get('versionEndIncluding'),
-                                'versionEndExcluding': cpe_match.get('versionEndExcluding'),
-                                'vulnerable': cpe_match.get('vulnerable', True),
-                                'matchCriteriaId': cpe_match.get('matchCriteriaId')  # v2.0 specific
-                            })
-                    
-                    if config_entry['cpe_match']:
-                        cpe_configurations.append(config_entry)
+            # Handle v2.0 configurations structure (configurations is a list)
+            if isinstance(configurations, list):
+                for config in configurations:
+                    for node in config.get('nodes', []):
+                        config_entry = {
+                            'operator': node.get('operator', ''),
+                            'negate': node.get('negate', False),
+                            'cpe_match': []
+                        }
+                        
+                        # Process cpeMatch entries in this node
+                        for cpe_match in node.get('cpeMatch', []):
+                            cpe = cpe_match.get('criteria', '')  # v2.0 uses 'criteria' instead of 'cpe23Uri'
+                            if cpe:
+                                # Parse CPE to extract product information and fix escaped slashes
+                                product = self._extract_and_fix_product_from_cpe(cpe)
+                                if product:
+                                    affected_products.append(product)
+                                
+                                # Fix the CPE URI itself
+                                fixed_cpe = self._fix_product_name(cpe)
+                                
+                                # Clean CPE match data
+                                cleaned_cpe_match = self._clean_cpe_match({
+                                    'cpe23Uri': fixed_cpe,  # Keep consistent field name
+                                    'versionStartIncluding': cpe_match.get('versionStartIncluding'),
+                                    'versionStartExcluding': cpe_match.get('versionStartExcluding'),
+                                    'versionEndIncluding': cpe_match.get('versionEndIncluding'),
+                                    'versionEndExcluding': cpe_match.get('versionEndExcluding'),
+                                    'vulnerable': cpe_match.get('vulnerable', True),
+                                    'matchCriteriaId': cpe_match.get('matchCriteriaId')  # v2.0 specific
+                                })
+                                
+                                config_entry['cpe_match'].append(cleaned_cpe_match)
+                        
+                        # Also check children nodes recursively
+                        children = node.get('children', [])
+                        for child in children:
+                            for cpe_match in child.get('cpeMatch', []):
+                                cpe = cpe_match.get('criteria', '')
+                                if cpe:
+                                    # Parse CPE to extract product information and fix escaped slashes
+                                    product = self._extract_and_fix_product_from_cpe(cpe)
+                                    if product:
+                                        affected_products.append(product)
+                                    
+                                    # Fix the CPE URI itself
+                                    fixed_cpe = self._fix_product_name(cpe)
+                                    
+                                    # Clean CPE match data
+                                    cleaned_cpe_match = self._clean_cpe_match({
+                                        'cpe23Uri': fixed_cpe,  # Keep consistent field name
+                                        'versionStartIncluding': cpe_match.get('versionStartIncluding'),
+                                        'versionStartExcluding': cpe_match.get('versionStartExcluding'),
+                                        'versionEndIncluding': cpe_match.get('versionEndIncluding'),
+                                        'versionEndExcluding': cpe_match.get('versionEndExcluding'),
+                                        'vulnerable': cpe_match.get('vulnerable', True),
+                                        'matchCriteriaId': cpe_match.get('matchCriteriaId')  # v2.0 specific
+                                    })
+                                    
+                                    config_entry['cpe_match'].append(cleaned_cpe_match)
+                        
+                        if config_entry['cpe_match']:
+                            cpe_configurations.append(config_entry)
             
-            return {
+            # Clean CVSS data - only include non-null values
+            cleaned_cvss_v3 = self._clean_cvss_data(cvss_v3)
+            cleaned_cvss_v2 = self._clean_cvss_data(cvss_v2)
+            
+            result = {
                 'cve_id': cve_id,
                 'description': description,
-                'cvss_v3': cvss_v3,
-                'cvss_v2': cvss_v2,
                 'cwe_ids': list(set(cwe_ids)),
                 'affected_products': list(set(affected_products)),
                 'cpe_configurations': cpe_configurations,
@@ -399,6 +593,14 @@ class CVEProcessor:
                 'last_modified_date': cve_data.get('lastModified', ''),
                 'source': 'NVD v2.0'
             }
+            
+            # Only add CVSS data if it has actual values
+            if cleaned_cvss_v3:
+                result['cvss_v3'] = cleaned_cvss_v3
+            if cleaned_cvss_v2:
+                result['cvss_v2'] = cleaned_cvss_v2
+            
+            return result
             
         except Exception as e:
             logger.error(f"Error processing v2 CVE: {e}")
@@ -446,26 +648,33 @@ class CVEProcessor:
                 content_parts.append(f"Related CWEs: {', '.join(cwe_ids)}")
             
             # Add CAPEC information
-            capec_refs = cve.get('capec_refs', [])
-            if capec_refs:
-                content_parts.append(f"Related CAPECs: {', '.join(capec_refs[:3])}")  # Limit to 3
+            capec_entries = cve.get('capec_entries', [])
+            if capec_entries:
+                content_parts.append(f"Related CAPECs: {', '.join(capec_entries[:3])}")  # Limit to 3
             
-            # Add MITRE ATT&CK techniques
+            # Add MITRE ATT&CK techniques and tactics
             mitre_techniques = cve.get('mitre_techniques', [])
+            mitre_tactics = cve.get('mitre_tactics', [])
             if mitre_techniques:
                 content_parts.append(f"MITRE ATT&CK Techniques: {', '.join(mitre_techniques[:3])}")  # Limit to 3
+            if mitre_tactics:
+                content_parts.append(f"MITRE ATT&CK Tactics: {', '.join(mitre_tactics[:3])}")  # Limit to 3
             
             # Add correlation information
             if cve.get('is_in_kev'):
-                content_parts.append("⚠️ This vulnerability is in CISA's Known Exploited Vulnerabilities (KEV) catalog")
+                content_parts.append("WARNING: This vulnerability is in CISA's Known Exploited Vulnerabilities (KEV) catalog")
             
-            csaf_ids = cve.get('csaf_ids', [])
-            if csaf_ids:
-                content_parts.append(f"📋 CSAF Advisories: {', '.join(csaf_ids[:3])}")  # Limit to 3
+            csaf_correlations = cve.get('csaf_correlations', [])
+            if csaf_correlations:
+                csaf_ids = [csaf.get('id', '') for csaf in csaf_correlations if csaf.get('id')]
+                if csaf_ids:
+                    content_parts.append(f"CSAF Advisories: {', '.join(csaf_ids[:3])}")  # Limit to 3
             
-            exploitdb_ids = cve.get('exploitdb_ids', [])
-            if exploitdb_ids:
-                content_parts.append(f"🔧 ExploitDB IDs: {', '.join(exploitdb_ids[:3])}")  # Limit to 3
+            exploitdb_correlations = cve.get('exploitdb_correlations', [])
+            if exploitdb_correlations:
+                exploitdb_ids = [exp.get('id', '') for exp in exploitdb_correlations if exp.get('id')]
+                if exploitdb_ids:
+                    content_parts.append(f"ExploitDB IDs: {', '.join(exploitdb_ids[:3])}")  # Limit to 3
             
             # Add references
             references = cve.get('references', [])
@@ -481,8 +690,9 @@ class CVEProcessor:
                 'document_type': 'CVE',
                 'cve_refs': [cve_id],
                 'cwe_refs': cwe_ids,
-                'capec_refs': capec_refs,
+                'capec_entries': capec_entries,
                 'mitre_techniques': mitre_techniques,
+                'mitre_tactics': mitre_tactics,
                 'cvss_v3': cvss_v3,
                 'cvss_v2': cvss_v2,
                 'affected_products': affected_products,
@@ -491,9 +701,7 @@ class CVEProcessor:
                 'last_modified_date': cve.get('last_modified_date', ''),
                 'is_in_kev': cve.get('is_in_kev', False),
                 'csaf_correlations_count': len(cve.get('csaf_correlations', [])),
-                'csaf_ids': csaf_ids,
                 'exploitdb_correlations_count': len(cve.get('exploitdb_correlations', [])),
-                'exploitdb_ids': exploitdb_ids,
                 'tags': self._extract_tags_from_cve(cve)
             }
             enhanced_docs.append(doc)
@@ -567,28 +775,93 @@ class CVEProcessor:
             elif 'os' in product_lower or 'operating_system' in product_lower:
                 tags.append('operating_system')
         
+        # Add CAPEC tags
+        capec_entries = cve.get('capec_entries', [])
+        if capec_entries:
+            tags.append('capec')
+            tags.extend([f"capec_{capec.lower()}" for capec in capec_entries[:3]])  # Limit to 3
+        
+        # Add MITRE ATT&CK tags
+        mitre_techniques = cve.get('mitre_techniques', [])
+        mitre_tactics = cve.get('mitre_tactics', [])
+        if mitre_techniques:
+            tags.append('mitre_attack')
+            tags.extend([f"technique_{tech.lower()}" for tech in mitre_techniques[:3]])  # Limit to 3
+        if mitre_tactics:
+            tags.extend([f"tactic_{tactic.lower()}" for tactic in mitre_tactics[:3]])  # Limit to 3
+        
+        # Add KEV tag
+        if cve.get('is_in_kev'):
+            tags.extend(['kev', 'exploited', 'critical'])
+        
         return list(set(tags))  # Remove duplicates
     
 
     def save_processed_data(self, enhanced_docs: List[Dict]):
-        """Save processed data"""
+        """Save processed data by year in both knowledge_base and CVE/processed directories"""
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         
-        # Save enhanced documents with timestamp
-        docs_file = self.processed_dir / f"enhanced_documents_{timestamp}.json"
-        with open(docs_file, 'w') as f:
-            json.dump(enhanced_docs, f, indent=2)
+        # Group documents by year
+        docs_by_year = {}
+        for doc in enhanced_docs:
+            if doc['document_type'] == 'CVE':
+                # Extract year from CVE ID (e.g., CVE-2024-1234 -> 2024)
+                cve_id = doc['id']
+                if cve_id.startswith('CVE-'):
+                    try:
+                        year = cve_id.split('-')[1]
+                        if year not in docs_by_year:
+                            docs_by_year[year] = []
+                        docs_by_year[year].append(doc)
+                    except (IndexError, ValueError):
+                        # If we can't parse the year, put in 'unknown' category
+                        if 'unknown' not in docs_by_year:
+                            docs_by_year['unknown'] = []
+                        docs_by_year['unknown'].append(doc)
+            else:
+                # Non-CVE documents (KEV, etc.) go to 'other' category
+                if 'other' not in docs_by_year:
+                    docs_by_year['other'] = []
+                docs_by_year['other'].append(doc)
         
-        # Also save with the expected filename for CPE extraction
-        expected_filename = self.processed_dir / "enhanced_documents_cve_2024.json"
-        with open(expected_filename, 'w') as f:
-            json.dump(enhanced_docs, f, indent=2)
+        # Save by year in both locations
+        knowledge_base_dir = self.config.knowledge_base_dir
+        knowledge_base_dir.mkdir(parents=True, exist_ok=True)
+        
+        total_saved = 0
+        
+        for year, year_docs in docs_by_year.items():
+            if not year_docs:
+                continue
+                
+            # Save to knowledge_base directory
+            kb_file = knowledge_base_dir / f"enhanced_documents_cve_{year}.json"
+            with open(kb_file, 'w', encoding='utf-8') as f:
+                json.dump(year_docs, f, indent=2, ensure_ascii=False)
+            
+            # Save to CVE/processed directory
+            processed_file = self.processed_dir / f"enhanced_documents_cve_{year}.json"
+            with open(processed_file, 'w', encoding='utf-8') as f:
+                json.dump(year_docs, f, indent=2, ensure_ascii=False)
+            
+            total_saved += len(year_docs)
+            logger.info(f"Saved {len(year_docs)} documents for year {year}")
+        
+        # Also save complete dataset with timestamp
+        docs_file = self.processed_dir / f"enhanced_documents_{timestamp}.json"
+        with open(docs_file, 'w', encoding='utf-8') as f:
+            json.dump(enhanced_docs, f, indent=2, ensure_ascii=False)
         
         # Calculate correlation statistics
         kev_count = sum(1 for cve in self.all_cves if cve.get('is_in_kev'))
         csaf_correlations = sum(len(cve.get('csaf_correlations', [])) for cve in self.all_cves)
         exploitdb_correlations = sum(len(cve.get('exploitdb_correlations', [])) for cve in self.all_cves)
         cwe_with_mapping = sum(1 for cve in self.all_cves if any(cwe in self.cwe_capec_mitre_mapping for cwe in cve.get('cwe_ids', [])))
+        capec_enriched = sum(1 for cve in self.all_cves if cve.get('capec_entries'))
+        mitre_enriched = sum(1 for cve in self.all_cves if cve.get('mitre_techniques'))
+        total_capec_entries = sum(len(cve.get('capec_entries', [])) for cve in self.all_cves)
+        total_mitre_techniques = sum(len(cve.get('mitre_techniques', [])) for cve in self.all_cves)
+        total_mitre_tactics = sum(len(cve.get('mitre_tactics', [])) for cve in self.all_cves)
         
         # Save summary
         summary = {
@@ -598,30 +871,47 @@ class CVEProcessor:
             'total_enhanced_documents': len(enhanced_docs),
             'cve_documents': len([d for d in enhanced_docs if d['document_type'] == 'CVE']),
             'kev_documents': len([d for d in enhanced_docs if d['document_type'] == 'KEV']),
+            'documents_by_year': {year: len(docs) for year, docs in docs_by_year.items()},
             'correlation_statistics': {
                 'cves_in_kev': kev_count,
                 'total_csaf_correlations': csaf_correlations,
                 'total_exploitdb_correlations': exploitdb_correlations,
                 'cves_with_cwe_mapping': cwe_with_mapping,
-                'cwe_capec_mitre_mappings_loaded': len(self.cwe_capec_mitre_mapping)
+                'cwe_capec_mitre_mappings_loaded': len(self.cwe_capec_mitre_mapping),
+                'cves_with_capec': capec_enriched,
+                'cves_with_mitre_techniques': mitre_enriched,
+                'total_capec_entries': total_capec_entries,
+                'total_mitre_techniques': total_mitre_techniques,
+                'total_mitre_tactics': total_mitre_tactics
             },
             'files': {
-                'enhanced_documents': str(docs_file),
-                'enhanced_documents_cve_2024': str(expected_filename)
+                'enhanced_documents_timestamped': str(docs_file),
+                'knowledge_base_directory': str(knowledge_base_dir),
+                'processed_directory': str(self.processed_dir)
             }
         }
         
         summary_file = self.processed_dir / f"processing_summary_{timestamp}.json"
-        with open(summary_file, 'w') as f:
-            json.dump(summary, f, indent=2)
+        with open(summary_file, 'w', encoding='utf-8') as f:
+            json.dump(summary, f, indent=2, ensure_ascii=False)
         
-        logger.info(f"Processed data saved to {self.processed_dir}")
+        logger.info(f"Processed data saved to {self.processed_dir} and {knowledge_base_dir}")
         logger.info(f"Summary: {len(self.all_cves)} CVEs, {len(self.kev_data)} KEV entries, {len(enhanced_docs)} enhanced documents")
         logger.info(f"Correlations: {kev_count} CVEs in KEV, {csaf_correlations} CSAF correlations, {exploitdb_correlations} ExploitDB correlations")
-    
+        logger.info(f"CWE-CAPEC-MITRE: {capec_enriched} CVEs with CAPEC, {mitre_enriched} CVEs with MITRE techniques")
+        logger.info(f"Total enrichments: {total_capec_entries} CAPEC entries, {total_mitre_techniques} MITRE techniques, {total_mitre_tactics} MITRE tactics")
+        logger.info(f"Saved {total_saved} documents across {len(docs_by_year)} year categories")
+
     def run_full_processing(self, max_cves: Optional[int] = None):
         """Run the complete processing pipeline"""
         logger.info("Starting full CVE processing pipeline...")
+        
+        # Load CTI data first
+        logger.info("Loading CTI correlation data...")
+        self.load_cwe_capec_mitre_mapping()
+        self.load_csaf_data()
+        self.load_exploitdb_data()
+        self.load_kev_data()
         
         # Process all CVE files
         self.process_all_cve_files(max_cves)
@@ -639,15 +929,8 @@ class CVEProcessor:
         # Create enhanced documents
         enhanced_docs = self.create_enhanced_documents()
         
-        # Save everything
-        save_processed_data(
-            enhanced_docs,
-            self.processed_dir,
-            self.all_cves,
-            self.kev_data,
-            self.cwe_capec_mitre_mapping,
-            logger
-        )
+        # Save everything using the class method
+        self.save_processed_data(enhanced_docs)
         
         logger.info("Full CVE processing completed!")
 
