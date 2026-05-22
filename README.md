@@ -30,13 +30,11 @@ This project combines a Neo4j knowledge graph (KG) for structured vulnerability 
    ```
 
 2. **Download 2024 CVE Data**
-
-   And feel free to download more data.
    
    ```bash
    bash scripts/download_cve_2024.sh
    ```
-   This will download the latest 2024 CVE data from NVD into `data/CVE/zip/`.
+   This will download the latest 2024 CVE data from NVD into `data/CVE/zip/`. And feel free to download more data.
 
 4. **Run the Data Pipeline**
    ```bash
