@@ -1,0 +1,51 @@
+{
+  "training_config": {
+    "learning_rate": 1e-06,
+    "max_steps": 200,
+    "num_epochs": 1,
+    "eval_steps": 40,
+    "save_steps": 40,
+    "logging_steps": 1,
+    "warmup_steps": 0,
+    "warmup_ratio": 0.0,
+    "weight_decay": 0.999,
+    "max_grad_norm": 1e-05,
+    "label_smoothing_factor": 0.99,
+    "batch_size": 1,
+    "gradient_accumulation_steps": 1,
+    "max_length": 256,
+    "fp16": false,
+    "bf16": false,
+    "gradient_checkpointing": false,
+    "lr_scheduler_type": "constant",
+    "dataloader_pin_memory": false,
+    "dataloader_num_workers": 0,
+    "remove_unused_columns": false,
+    "optim": "adamw_torch",
+    "adam_beta1": 0.9,
+    "adam_beta2": 0.999,
+    "adam_epsilon": 1e-08
+  },
+  "model_info": {
+    "model_name": "meta-llama/Meta-Llama-3-8B",
+    "subset_size": 100,
+    "learning_rate": 1e-06,
+    "max_steps": 200
+  },
+  "training_results": {
+    "total_steps": 206,
+    "final_loss": null,
+    "final_eval_loss": null,
+    "training_time": 232.9144
+  },
+  "overfitting_analysis": {
+    "loss_stable": true,
+    "eval_loss_stable": true,
+    "no_early_stopping": true,
+    "min_loss": 17.8855,
+    "max_loss": 21.4297,
+    "min_eval_loss": 19.21837043762207,
+    "max_eval_loss": 19.218412399291992
+  },
+  "timestamp": "2025-07-26T19:25:17.694665"
+}
