@@ -89,7 +89,7 @@ ORDER BY cve.cvss_v3_base_score DESC
 
 3. **Collect, Correlate, and Process Data**
 
-   Put your downloaded zipped CVE in data/CVE/zip folder, and proceed the following:
+   Put your downloaded zipped CVE in data/CVE/zip folder, such as "nvdcve-2.0-2024.json.zip" here, and proceed the following:
    
    ```bash
    cd src/collectors
