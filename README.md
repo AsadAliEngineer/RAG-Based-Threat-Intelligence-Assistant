@@ -123,9 +123,9 @@ curl -X POST http://localhost:8000/api/v1/search \
 ```
 
 ## **Access Interfaces**
-- ** Gradio UI**: http://localhost:7860
-- ** API Documentation**: http://localhost:8000/docs  
-- ** API Health Check**: http://localhost:8000/api/v1/health
+-  Gradio UI: http://localhost:7860
+-  API Documentatio*: http://localhost:8000/docs  
+-  API Health Check: http://localhost:8000/api/v1/health
 
 ##  Architecture Overview
 
