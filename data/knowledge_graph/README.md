@@ -6,7 +6,7 @@ This directory contains the constructed knowledge graph data, analytics, and exp
 
 ```
 knowledge_graph/
-├── analytics/          # Graph analytics and statistics
+├── analytics/          # Graph analytics and statistics (the current one is based on 2024 CVEs only, feel free to add more)
 ├── exports/           # Data exports from Neo4j
 ├── backups/           # Database backups and snapshots
 └── README.md          # This file
@@ -45,20 +45,6 @@ Neo4j Database
     ↓
 Analytics & Exports (knowledge_graph/)
 ```
-
-## 📈 Current Status
-
-- **Graph Construction**: ✅ Complete (38,995 CVEs, 14,499 Products)
-- **Analytics**: ✅ Generated
-- **Exports**: 🔄 Ready for generation
-- **Backups**: 🔄 Ready for setup
-
-## 🚀 Next Steps
-
-1. **Generate Exports**: Create CSV/JSON exports from Neo4j
-2. **Setup Backups**: Configure automated database backups
-3. **Analytics Updates**: Regular analytics generation
-4. **Data Versioning**: Track changes over time
 
 ## 📝 Usage
 
