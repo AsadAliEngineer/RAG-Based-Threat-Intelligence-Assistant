@@ -1,5 +1,11 @@
 import json
+import sys
 from pathlib import Path
+
+# Add the project root to Python path for imports
+project_root = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(project_root))
+
 from src.constructors.cpe_parser_system import ProductExtractor
 from tqdm import tqdm
 from config import Config
@@ -14,29 +20,73 @@ def cpecomponent_to_dict(obj):
     return obj
 
 config = Config()
-CVE_FILE = config.enhanced_documents_path
+KNOWLEDGE_BASE_DIR = config.knowledge_base_dir
 OUTPUT_FILE = config.knowledge_base_dir / 'cpe_parsing_results_full.json'
 
 
-def load_all_cves(filename):
-    with open(filename, 'r') as f:
-        data = json.load(f)
-    # Filter for CVE documents only
-    cve_docs = [doc for doc in data if doc.get('document_type') == 'CVE']
-    # Extract only id and configurations fields
-    sample = []
-    for doc in cve_docs:
-        sample.append({
-            'id': doc.get('id'),
-            'configurations': doc.get('cpe_configurations', {})
-        })
-    return sample
+def load_all_cves_from_year_files(knowledge_base_dir):
+    """Load CVEs from all year-based files in the knowledge base directory"""
+    all_cve_docs = []
+    
+    # Find all year-based CVE files
+    cve_files = list(knowledge_base_dir.glob("enhanced_documents_cve_*.json"))
+    cve_files.sort()  # Sort to process in chronological order
+    
+    print(f"Found {len(cve_files)} year-based CVE files:")
+    for file in cve_files:
+        print(f"  - {file.name}")
+    
+    for file in cve_files:
+        print(f"Loading CVEs from {file.name}...")
+        try:
+            with open(file, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+            
+            # Filter for CVE documents only
+            cve_docs = [doc for doc in data if doc.get('document_type') == 'CVE']
+            print(f"  Loaded {len(cve_docs)} CVEs from {file.name}")
+            
+            # Extract only id and cpe_configurations fields (mapped to 'configurations' for compatibility)
+            for doc in cve_docs:
+                all_cve_docs.append({
+                    'id': doc.get('id'),
+                    'configurations': doc.get('cpe_configurations', {})
+                })
+                
+        except Exception as e:
+            print(f"Error loading {file.name}: {e}")
+            continue
+    
+    print(f"Total CVEs loaded: {len(all_cve_docs)}")
+    return all_cve_docs
 
 
 def main():
-    print(f"Loading all CVEs from {CVE_FILE}...")
-    cve_sample = load_all_cves(CVE_FILE)
+    print(f"Loading all CVEs from year-based files in {KNOWLEDGE_BASE_DIR}...")
+    cve_sample = load_all_cves_from_year_files(KNOWLEDGE_BASE_DIR)
+    
+    if not cve_sample:
+        print("No CVEs found! Please run the CVE processor first to generate the year-based files.")
+        return
+    
     print(f"Loaded {len(cve_sample)} CVEs. Running CPE parser with progress bar...")
+    
+    # Show a sample of CVE data structure for verification
+    if cve_sample:
+        sample_cve = cve_sample[0]
+        print(f"\nSample CVE structure:")
+        print(f"  ID: {sample_cve['id']}")
+        print(f"  Configurations type: {type(sample_cve['configurations'])}")
+        if isinstance(sample_cve['configurations'], list):
+            print(f"  Number of configuration groups: {len(sample_cve['configurations'])}")
+            if sample_cve['configurations']:
+                first_config = sample_cve['configurations'][0]
+                print(f"  First config keys: {list(first_config.keys())}")
+                if 'cpe_match' in first_config:
+                    print(f"  Number of CPE matches: {len(first_config['cpe_match'])}")
+                    if first_config['cpe_match']:
+                        print(f"  Sample CPE: {first_config['cpe_match'][0].get('cpe23Uri', 'N/A')}")
+    
     extractor = ProductExtractor()
 
     # Patch the extract_products_from_cve_data to use tqdm
@@ -98,7 +148,7 @@ def main():
     # Save results to file (convert CPEComponent to dict)
     results_serializable = cpecomponent_to_dict(results)
     OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_FILE, 'w') as f:
+    with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(results_serializable, f, indent=2)
     print(f"\nResults saved to {OUTPUT_FILE}")
 
