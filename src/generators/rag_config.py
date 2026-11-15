@@ -10,8 +10,8 @@ from pathlib import Path
 # Base data directory (edit as needed)
 BASE_DATA_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../data/knowledge_base'))
 
-# Exported CVE documents for RAG - Use individual year files instead of merged file
-CVE_DATA_PATH = os.path.join(BASE_DATA_DIR, 'enhanced_documents_cve_2021.json')  # Start with 2021 for Log4j
+# Exported CVE documents for RAG - Use the enhanced documents with full knowledge graph data
+CVE_DATA_PATH = os.path.join(BASE_DATA_DIR, 'rag_exports/cve_documents_for_rag.json')  # Full knowledge graph data
 
 # Year-based data paths
 CVE_YEAR_PATHS = {
@@ -23,10 +23,10 @@ CVE_YEAR_PATHS = {
 }
 
 # Vector database directory
-VECTOR_DB_PATH = os.path.join(BASE_DATA_DIR, 'vector_db')
+VECTOR_DB_PATH = os.path.join(BASE_DATA_DIR, 'vector_db_new')
 
-# Embedding model name (HuggingFace/SBERT) - Updated to match existing database
-EMBEDDING_MODEL_NAME = "BAAI/bge-large-en"  # Produces 1024-dimensional embeddings
+# Embedding model name (HuggingFace/SBERT) - Updated to use publicly available model
+EMBEDDING_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"  # Produces 384-dimensional embeddings, publicly available
 
 # GPU Configuration for RTX A6000
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"

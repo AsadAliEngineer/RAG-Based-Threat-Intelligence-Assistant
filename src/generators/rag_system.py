@@ -81,8 +81,9 @@ class CVEDocumentProcessor:
                     'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
                     'products': doc.get('affected_products', []),
                     'vendors': doc.get('affected_vendors', []),
-                    'weaknesses': doc.get('weaknesses', []),
-                    'attack_patterns': doc.get('attack_patterns', [])
+                    'cwe_refs': doc.get('cwe_refs', []),
+                    'capec_entries': doc.get('capec_entries', []),
+                    'mitre_techniques': doc.get('mitre_techniques', [])
                 }
             })
             return chunks
@@ -103,8 +104,9 @@ class CVEDocumentProcessor:
                     'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
                     'products': doc.get('affected_products', []),
                     'vendors': doc.get('affected_vendors', []),
-                    'weaknesses': doc.get('weaknesses', []),
-                    'attack_patterns': doc.get('attack_patterns', [])
+                    'cwe_refs': doc.get('cwe_refs', []),
+                    'capec_entries': doc.get('capec_entries', []),
+                    'mitre_techniques': doc.get('mitre_techniques', [])
                 }
             })
         else:
@@ -124,8 +126,9 @@ class CVEDocumentProcessor:
                         'cvss_score': doc.get('cvss_v3', {}).get('base_score'),
                         'products': doc.get('affected_products', []),
                         'vendors': doc.get('affected_vendors', []),
-                        'weaknesses': doc.get('weaknesses', []),
-                        'attack_patterns': doc.get('attack_patterns', [])
+                        'cwe_refs': doc.get('cwe_refs', []),
+                        'capec_entries': doc.get('capec_entries', []),
+                        'mitre_techniques': doc.get('mitre_techniques', [])
                     }
                 })
         
@@ -216,6 +219,8 @@ class CVESearchEngine:
     def add_documents(self, chunks: List[Dict[str, Any]], embeddings: np.ndarray, batch_size: int = 5000):
         """Add documents and embeddings to the vector database in batches"""
         logger.info("Adding documents to vector database in batches...")
+        logger.info(f"Collection name: {self.collection.name}")
+        logger.info(f"Collection count before adding: {self.collection.count()}")
         
         total = len(chunks)
         for start in tqdm(range(0, total, batch_size), desc="Adding to vector store"):
@@ -224,6 +229,22 @@ class CVESearchEngine:
             batch_embeddings = embeddings[start:end]
             ids = [chunk['id'] for chunk in batch_chunks]
             texts = [chunk['text'] for chunk in batch_chunks]
+            
+            # Debug: Check for any issues with the first batch
+            if start == 0:
+                logger.info(f"First batch - IDs count: {len(ids)}")
+                logger.info(f"First batch - Texts count: {len(texts)}")
+                logger.info(f"First batch - Embeddings shape: {batch_embeddings.shape}")
+                logger.info(f"Sample ID: {ids[0] if ids else 'None'}")
+                logger.info(f"Sample text length: {len(texts[0]) if texts else 0}")
+                # Debug metadata
+                if batch_chunks:
+                    sample_metadata = batch_chunks[0]['metadata']
+                    logger.info(f"Sample metadata keys: {list(sample_metadata.keys())}")
+                    logger.info(f"Sample CWE refs: {sample_metadata.get('cwe_refs', 'N/A')}")
+                    logger.info(f"Sample CAPEC entries: {sample_metadata.get('capec_entries', 'N/A')}")
+                    logger.info(f"Sample MITRE techniques: {sample_metadata.get('mitre_techniques', 'N/A')}")
+            
             # Convert metadata lists to strings for ChromaDB compatibility
             metadatas = []
             for chunk in batch_chunks:
@@ -235,15 +256,24 @@ class CVESearchEngine:
                         else:
                             metadata[key] = str(value)  # Convert all values to strings
                 metadatas.append(metadata)
+            
             embeddings_list = batch_embeddings.tolist()
-            self.collection.add(
-                ids=ids,
-                embeddings=embeddings_list,
-                documents=texts,
-                metadatas=metadatas
-            )
-            logger.info(f"Added batch {start} to {end} ({end-start} documents)")
+            
+            try:
+                self.collection.add(
+                    ids=ids,
+                    embeddings=embeddings_list,
+                    documents=texts,
+                    metadatas=metadatas
+                )
+                logger.info(f"Added batch {start} to {end} ({end-start} documents)")
+            except Exception as e:
+                logger.error(f"Error adding batch {start} to {end}: {e}")
+                logger.error(f"Batch details - IDs: {ids[:3]}..., Texts: {len(texts)} items, Embeddings: {len(embeddings_list)} items")
+                raise
+                
         logger.info(f"Added {total} documents to vector database in total")
+        logger.info(f"Collection count after adding: {self.collection.count()}")
     
     def search(self, query: str, n_results: int = 10, 
                filter_dict: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
@@ -310,6 +340,19 @@ class CVESearchEngine:
             distances = results.get('distances', [[]]) or [[]]
             
             logger.info(f"Results arrays - IDs: {len(ids[0]) if ids and ids[0] else 0}, Documents: {len(documents[0]) if documents and documents[0] else 0}")
+            logger.info(f"Results arrays - Metadatas: {len(metadatas[0]) if metadatas and metadatas[0] else 0}")
+            
+            # Debug: Check what metadata is actually being retrieved
+            if metadatas and metadatas[0] and len(metadatas[0]) > 0:
+                sample_metadata = metadatas[0][0]
+                logger.info(f"Sample retrieved metadata keys: {list(sample_metadata.keys()) if sample_metadata else 'None'}")
+                logger.info(f"Sample retrieved CWE refs: {sample_metadata.get('cwe_refs', 'N/A') if sample_metadata else 'N/A'}")
+                logger.info(f"Sample retrieved CAPEC entries: {sample_metadata.get('capec_entries', 'N/A') if sample_metadata else 'N/A'}")
+                logger.info(f"Sample retrieved MITRE techniques: {sample_metadata.get('mitre_techniques', 'N/A') if sample_metadata else 'N/A'}")
+                logger.info(f"Sample retrieved severity: {sample_metadata.get('severity', 'N/A') if sample_metadata else 'N/A'}")
+                logger.info(f"Sample retrieved products: {sample_metadata.get('products', 'N/A') if sample_metadata else 'N/A'}")
+                # Show all metadata for debugging
+                logger.info(f"Full sample metadata: {sample_metadata}")
             
             if (ids and ids[0] and documents and documents[0] and metadatas and metadatas[0] and distances and distances[0]):
                 for i in range(min(len(ids[0]), n_results)):
@@ -381,6 +424,20 @@ class CVERAGSystem:
                 logger.info(f"Vector database already exists with {stats['total_documents']} documents")
                 return
         
+        # Clear existing collection if rebuilding
+        if force_rebuild:
+            logger.info("Force rebuild requested - using fresh vector database directory...")
+            
+            # Ensure the directory exists with proper permissions
+            os.makedirs(self.vector_db_path, exist_ok=True)
+            # Set directory permissions to ensure it's writable
+            os.chmod(self.vector_db_path, 0o755)
+            logger.info(f"Using fresh vector database directory: {self.vector_db_path}")
+            
+            # Recreate the search engine to ensure fresh collection
+            logger.info("Recreating search engine with fresh collection...")
+            self.search_engine = CVESearchEngine(self.vector_db_path)
+        
         # Load and process documents
         documents = self.processor.load_cve_documents(self.cve_data_path)
         if not documents:
@@ -389,12 +446,29 @@ class CVERAGSystem:
             
         chunks = self.processor.process_documents(documents)
         
-        # Generate embeddings
-        texts = [chunk['text'] for chunk in chunks]
+        # Remove duplicates before generating embeddings to save time
+        seen_ids = set()
+        unique_chunks = []
+        duplicate_count = 0
+        
+        for chunk in chunks:
+            chunk_id = chunk['id']
+            if chunk_id in seen_ids:
+                duplicate_count += 1
+                continue
+            seen_ids.add(chunk_id)
+            unique_chunks.append(chunk)
+        
+        if duplicate_count > 0:
+            logger.warning(f"Removed {duplicate_count} duplicate chunks before embedding generation.")
+            logger.info(f"Processing {len(unique_chunks)} unique chunks.")
+        
+        # Generate embeddings for unique chunks only
+        texts = [chunk['text'] for chunk in unique_chunks]
         embeddings = self.embedding_generator.generate_embeddings(texts)
         
         # Add to vector database
-        self.search_engine.add_documents(chunks, embeddings)
+        self.search_engine.add_documents(unique_chunks, embeddings)
         
         logger.info("Vector database build complete!")
     
@@ -586,10 +660,24 @@ if __name__ == "__main__":
         for i, result in enumerate(results, 1):
             metadata = result['metadata']
             print(f"{i}. {metadata['cve_id']} ({metadata.get('severity', 'Unknown')})")
-            print(f"   Products: {metadata.get('products', '')}")
-            print(f"   Vendors: {metadata.get('vendors', '')}")
-            print(f"   CWE: {metadata.get('weaknesses', '')}")
-            print(f"   CAPEC: {metadata.get('attack_patterns', '')}")
+            
+            # Format products for better readability
+            products = metadata.get('products', '')
+            if products:
+                # Take first 5 products and show count if more
+                product_list = products.split(', ')
+                if len(product_list) > 5:
+                    display_products = ', '.join(product_list[:5]) + f" (+{len(product_list)-5} more)"
+                else:
+                    display_products = products
+                print(f"   Products: {display_products}")
+            else:
+                print(f"   Products: None")
+            
+            print(f"   Vendors: {metadata.get('vendors', 'None')}")
+            print(f"   CWE: {metadata.get('weaknesses', metadata.get('cwe_refs', 'None'))}")
+            print(f"   CAPEC: {metadata.get('attack_patterns', metadata.get('capec_entries', 'None'))}")
+            print(f"   MITRE: {metadata.get('mitre_techniques', 'None')}")
             print(f"   Score: {result['score']:.4f}\n")
     elif args.summary:
         summary = rag_system.get_vulnerability_summary(args.summary)
