@@ -136,8 +136,6 @@ python src/ui/gradio_app.py
 
 ## **Test the System**
 ```bash
-# Test enhanced RAG with graph features
-python src/generators/enhanced_rag_with_graph.py
 
 # Test standard RAG
 python -m src.generators.rag_system --search "Log4j vulnerability"
